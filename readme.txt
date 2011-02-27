@@ -71,6 +71,9 @@ History:
 
     20110211(2.1-0)
           - Increased the precision of a paremeter for extreme long stretches
+    
+    2011????(2.)
+          - Added an option to preserve the tonal part or noise part
 
 Enjoy! :)
 Paul

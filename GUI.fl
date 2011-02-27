@@ -188,7 +188,7 @@ rendering=false;} {}
   } {
     Fl_Window window {
       label {Paul's Extreme Sound Stretch} open
-      xywh {54 265 995 550} type Double resizable
+      xywh {192 131 995 550} type Double resizable
       code0 {if(strlen(VERSION)<2) {o->color(FL_BLUE); o->label("VERSION NOT SET!!!!!!!!!!!!");};} visible
     } {
       Fl_Menu_Bar {} {open
@@ -385,7 +385,7 @@ stretch_slider->do_callback();}
           }
         }
         Fl_Group {} {
-          label Process
+          label Process open
           xywh {5 70 985 400} hide
         } {
           Fl_Group {} {open
@@ -469,19 +469,19 @@ control.update_process_parameters();}
             }
           }
           Fl_Group {} {open
-            xywh {605 75 120 65} box BORDER_BOX
+            xywh {750 75 120 65} box BORDER_BOX
           } {
             Fl_Check_Button compressor_enabled {
               label Compress
               callback {control.ppar.compressor.enabled=o->value();
 control.update_process_parameters();}
-              xywh {610 80 90 15} down_box DOWN_BOX labelfont 1
+              xywh {755 80 90 15} down_box DOWN_BOX labelfont 1
             }
             Fl_Slider compressor_power {
               label Power
               callback {control.ppar.compressor.power=o->value();
 control.update_process_parameters();}
-              xywh {610 100 110 15} type {Horz Knob}
+              xywh {755 100 110 15} type {Horz Knob}
             }
           }
           Fl_Slider {} {
@@ -489,7 +489,7 @@ control.update_process_parameters();}
             callback {REALTYPE x=o->value();
 x=pow(10.0,pow(x,1.5)-1.0)-0.1;
 control.set_volume(x);}
-            xywh {605 155 120 40} type {Horz Knob} labelfont 1 minimum 0.3 maximum 1.6 value 1
+            xywh {750 155 120 40} type {Horz Knob} labelfont 1 minimum 0.3 maximum 1.6 value 1
           }
           Fl_Group {} {open
             xywh {415 75 185 100} box BORDER_BOX
@@ -590,6 +590,28 @@ control.update_process_parameters();}
               code0 {o->init(filter_free_edit,FE_LOG,20.0,25000.0,FE_DB,-60,20,0.0);}
               class FreeEditControls
             } {}
+          }
+          Fl_Group {} {open
+            xywh {605 75 140 105} box BORDER_BOX
+          } {
+            Fl_Check_Button tonal_vs_noise_enabled {
+              label {Tonal/Noise}
+              callback {control.ppar.tonal_vs_noise.enabled=o->value();
+control.update_process_parameters();}
+              xywh {610 80 115 20} down_box DOWN_BOX labelfont 1
+            }
+            Fl_Slider tonal_vs_noise_bandwidth {
+              label Bandwidth
+              callback {control.ppar.tonal_vs_noise.bandwidth=o->value();
+control.update_process_parameters();}
+              xywh {610 141 130 15} type {Horz Knob} minimum 0.75 value 0.9
+            }
+            Fl_Slider tonal_vs_noise_preserve {
+              label {noise <-->tonal}
+              callback {control.ppar.tonal_vs_noise.preserve=o->value();
+control.update_process_parameters();}
+              xywh {610 105 130 15} type {Horz Knob} minimum -1 value 0.5
+            }
           }
         }
         Fl_Group {} {
@@ -860,6 +882,10 @@ harmonics_gauss->value(control.ppar.harmonics.gauss);
 spread_enabled->value(control.ppar.spread.enabled);
 spread_bandwidth->value(control.ppar.spread.bandwidth);
 
+
+tonal_vs_noise_enabled->value(control.ppar.tonal_vs_noise.enabled);
+tonal_vs_noise_preserve->value(control.ppar.tonal_vs_noise.preserve);
+tonal_vs_noise_bandwidth->value(control.ppar.tonal_vs_noise.bandwidth);
 
 bbpar_mono->value(control.bbpar.mono);
 bbpar_stereo_mode->value(control.bbpar.stereo_mode);

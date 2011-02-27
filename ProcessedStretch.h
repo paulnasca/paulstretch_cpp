@@ -58,6 +58,10 @@ struct ProcessParameters{
 ///		waveinfo.n_transients=1;
 ///		waveinfo.transients_data=new REALTYPE[1];
 ///		waveinfo.transients_data[0]=0;
+
+		tonal_vs_noise.enabled=false;
+		tonal_vs_noise.preserve=0.5;
+		tonal_vs_noise.bandwidth=0.9;
 	};
 	~ProcessParameters(){
 ///		delete []waveinfo.transients_data;
@@ -119,6 +123,13 @@ struct ProcessParameters{
 		bool enabled;
 		REALTYPE bandwidth;
 	}spread;
+
+	struct{
+		bool enabled;
+		REALTYPE preserve;
+		REALTYPE bandwidth;
+	}tonal_vs_noise;
+
 	FreeEdit free_filter;
 	FreeEdit stretch_multiplier;
 
@@ -147,10 +158,12 @@ class ProcessedStretch:public Stretch{
 		void do_free_filter(REALTYPE *freq1,REALTYPE *freq2);
 		void do_compressor(REALTYPE *freq1,REALTYPE *freq2);
 		void do_spread(REALTYPE *freq1,REALTYPE *freq2);
+		void do_tonal_vs_noise(REALTYPE *freq1,REALTYPE *freq2);
 
 		void copy(REALTYPE *freq1,REALTYPE *freq2);
 		void add(REALTYPE *freq2,REALTYPE *freq1,REALTYPE a=1.0);
 		void zero(REALTYPE *freq1);
+		void spread(REALTYPE *freq1,REALTYPE *freq2,REALTYPE spread_bandwidth);
 
 		void update_free_filter();
 		int nfreq;

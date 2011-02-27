@@ -55,6 +55,10 @@ void ProcessParameters::add2XML(XMLwrapper *xml){
 
 	xml->addparbool("spread.enabled",spread.enabled);
 	xml->addparreal("spread.bandwidth",spread.bandwidth);
+	
+	xml->addparbool("tonal_vs_noise.enabled",tonal_vs_noise.enabled);
+	xml->addparreal("tonal_vs_noise.bandwidth",tonal_vs_noise.bandwidth);
+	xml->addparreal("tonal_vs_noise.preserve",tonal_vs_noise.preserve);
 
 	xml->beginbranch("FREE_FILTER");
 	free_filter.add2XML(xml);
@@ -99,6 +103,11 @@ void ProcessParameters::getfromXML(XMLwrapper *xml){
 
 	spread.enabled=xml->getparbool("spread.enabled",spread.enabled);
 	spread.bandwidth=xml->getparreal("spread.bandwidth",spread.bandwidth);
+	
+	tonal_vs_noise.enabled=xml->getparbool("tonal_vs_noise.enabled",tonal_vs_noise.enabled);
+	tonal_vs_noise.preserve=xml->getparreal("tonal_vs_noise.preserve",tonal_vs_noise.bandwidth);
+	tonal_vs_noise.bandwidth=xml->getparreal("tonal_vs_noise.bandwidth",tonal_vs_noise.bandwidth);
+
 
 	if (xml->enterbranch("FREE_FILTER")){
 		free_filter.getfromXML(xml);
@@ -167,6 +176,11 @@ void ProcessedStretch::process_spectrum(REALTYPE *freq){
 	if (pars.harmonics.enabled) {
 		copy(freq,infreq);
 		do_harmonics(infreq,freq);
+	};
+
+	if (pars.tonal_vs_noise.enabled){
+		copy(freq,infreq);
+		do_tonal_vs_noise(infreq,freq);
 	};
 
 	if (pars.freq_shift.enabled) {
@@ -365,6 +379,10 @@ void ProcessedStretch::do_free_filter(REALTYPE *freq1,REALTYPE *freq2){
 };
 
 void ProcessedStretch::do_spread(REALTYPE *freq1,REALTYPE *freq2){
+	spread(freq1,freq2,pars.spread.bandwidth);
+};
+
+void ProcessedStretch::spread(REALTYPE *freq1,REALTYPE *freq2,REALTYPE spread_bandwidth){
 	//convert to log spectrum
 	REALTYPE minfreq=20.0;
 	REALTYPE maxfreq=0.5*samplerate;
@@ -387,7 +405,7 @@ void ProcessedStretch::do_spread(REALTYPE *freq1,REALTYPE *freq2){
 
 	//increase the bandwidth of each harmonic (by smoothing the log spectrum)
 	int n=2;
-	REALTYPE bandwidth=pars.spread.bandwidth;
+	REALTYPE bandwidth=spread_bandwidth;
 	REALTYPE a=1.0-pow(2.0,-bandwidth*bandwidth*10.0);
 	a=pow(a,8192.0/nfreq*n);
 
@@ -431,4 +449,34 @@ void ProcessedStretch::do_compressor(REALTYPE *freq1,REALTYPE *freq2){
 	for (int i=0;i<nfreq;i++) freq2[i]=freq1[i]*rap;
 };
 
+void ProcessedStretch::do_tonal_vs_noise(REALTYPE *freq1,REALTYPE *freq2){
+	spread(freq1,tmpfreq1,pars.tonal_vs_noise.bandwidth);
+
+	if (pars.tonal_vs_noise.preserve>=0.0){
+		REALTYPE mul=(pow(10.0,pars.tonal_vs_noise.preserve)-1.0);
+		for (int i=0;i<nfreq;i++) {
+			REALTYPE x=freq1[i];
+			REALTYPE smooth_x=tmpfreq1[i]+1e-6;
+
+			REALTYPE result=0.0;
+			result=x-smooth_x*mul;
+			if (result<0.0) result=0.0;
+			freq2[i]=result;
+		};
+	}else{
+		REALTYPE mul=(pow(5.0,1.0+pars.tonal_vs_noise.preserve)-1.0);
+		for (int i=0;i<nfreq;i++) {
+			REALTYPE x=freq1[i];
+			REALTYPE smooth_x=tmpfreq1[i]+1e-6;
+
+			REALTYPE result=0.0;
+			result=x-smooth_x*mul+0.1*mul;
+			if (result<0.0) result=x;
+			else result=0.0;
+
+			freq2[i]=result;
+		};
+	};
+
+};
 
