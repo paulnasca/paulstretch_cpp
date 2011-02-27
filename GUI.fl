@@ -267,7 +267,7 @@ render();}
         xywh {5 50 985 420} box BORDER_BOX
       } {
         Fl_Group {} {
-          label Parameters open selected
+          label Parameters open
           xywh {5 70 985 400}
         } {
           Fl_Slider stretch_slider {
@@ -941,12 +941,18 @@ if ( i == 0 ) return true;
   else  return false;} {}
 } 
 
-Function {main(int argc, char *argv[])} {return_type int
+Function {main(int argc, char *argv[])} {open return_type int
 } {
   code {GUI *gui=new GUI();
 
+
 if (argc>1){
-	gui->open_input_file(argv[1]);
+	const char *filename=argv[1];
+	if (filename[0]=='-'){
+		if (argc>2) filename=argv[2];
+		else filename=NULL;
+	};
+	if (filename) gui->open_input_file(filename);
 };
 gui->window->show();
 
@@ -955,5 +961,6 @@ Fl::run();
 
 delete gui;
 
-return 0;} {}
+return 0;} {selected
+  }
 } 

@@ -125,8 +125,12 @@ ProcessedStretch::ProcessedStretch(REALTYPE rap_,int in_bufsize_,FFTWindow w,boo
 	sumfreq=new REALTYPE[nfreq];
 	tmpfreq1=new REALTYPE[nfreq];
 	tmpfreq2=new REALTYPE[nfreq];
+	fbfreq=new REALTYPE[nfreq];
 	free_filter_freqs=new REALTYPE[nfreq];
-	for (int i=0;i<nfreq;i++) free_filter_freqs[i]=1.0;
+	for (int i=0;i<nfreq;i++) {
+		free_filter_freqs[i]=1.0;
+		fbfreq[i]=0.0;
+	};
 };
 ProcessedStretch::~ProcessedStretch(){
 	delete [] infreq;
@@ -134,6 +138,7 @@ ProcessedStretch::~ProcessedStretch(){
 	delete [] tmpfreq1;
 	delete [] tmpfreq2;
 	delete [] free_filter_freqs;
+	delete [] fbfreq;
 };
 
 void ProcessedStretch::set_parameters(ProcessParameters *ppar){

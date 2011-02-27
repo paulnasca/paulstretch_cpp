@@ -74,6 +74,7 @@ History:
     
     2011????(2.)
           - Added an option to preserve the tonal part or noise part
+	  - Ignored the commandline parameters starting with "-" (usefull for macosx)
 
 Enjoy! :)
 Paul

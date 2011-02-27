@@ -172,6 +172,7 @@ class ProcessedStretch:public Stretch{
 		ProcessParameters pars;
 
 		REALTYPE *infreq,*sumfreq,*tmpfreq1,*tmpfreq2;
+		REALTYPE *fbfreq;
 };
 
 #endif
