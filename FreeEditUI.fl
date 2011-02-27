@@ -1,0 +1,595 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0110 
+header_name {.h} 
+code_name {.cxx}
+decl {\#include <FL/Fl_File_Chooser.H>} {} 
+
+decl {\#include <FL/Fl_Box.H>} {public
+} 
+
+decl {\#include <FL/Fl_Group.H>} {public
+} 
+
+decl {\#include <FL/Fl_Box.H>} {public
+} 
+
+decl {\#include <FL/fl_draw.H>} {public
+} 
+
+decl {\#include <FL/Fl_Value_Input.H>} {public
+} 
+
+decl {\#include <FL/fl_ask.H>} {public
+} 
+
+decl {\#include<sys/stat.h>} {} 
+
+decl {\#include <stdio.h>} {} 
+
+decl {\#include <string>} {} 
+
+decl {\#include "Control.h"} {public
+} 
+
+decl {\#include <math.h>} {} 
+
+decl {\#include "FreeEdit.h"} {public
+} 
+
+decl {\#include <FL/Fl_Group.H>} {public
+} 
+
+class FreeEditUI {open : {public Fl_Box}
+} {
+  Function {FreeEditUI(int x,int y, int w, int h, const char *label=0):Fl_Box(x,y,w,h,label)} {} {
+    code {max_value_fl=min_value_fl=value_fl=position_fl=NULL;
+free_edit=NULL;
+control=NULL;
+
+current_point=-1;
+selected_point=-1;
+
+default_value=1.0;} {}
+  }
+  Function {~FreeEditUI()} {} {
+    code {} {}
+  }
+  Function {init(FreeEdit *free_edit_,Control *control_)} {open
+  } {
+    code {free_edit=free_edit_;
+control=control_;
+free_edit->update_curve();} {}
+  }
+  Function {init_value_io(Fl_Value_Input *value_fl_,Fl_Value_Input *position_fl_,Fl_Value_Input *min_value_fl_,Fl_Value_Input *max_value_fl_)} {} {
+    code {value_fl=value_fl_;
+position_fl=position_fl_;
+min_value_fl=min_value_fl_;
+max_value_fl=max_value_fl_;
+
+if (free_edit){
+	free_edit->extreme_y.set_min(min_value_fl->value());
+	free_edit->extreme_y.set_max(max_value_fl->value());
+};} {}
+  }
+  Function {get_color(Fl_Color c)} {return_type Fl_Color
+  } {
+    code {if (free_edit->get_enabled()) return c;
+
+return fl_color_average(c,fl_rgb_color(178,178,178),0.1);} {}
+  }
+  Function {draw()} {open
+  } {
+    code {int ox=x(),oy=y(),lx=w(),ly=h();
+
+//fl_color(FL_WHITE);
+fl_color(get_color(color()));
+fl_rectf(ox,oy,lx,ly);
+
+//fl_color(FL_GRAY);
+fl_color(get_color(labelcolor()));
+//draw grid
+fl_line_style(FL_SOLID);
+for (int ncoord=0;ncoord<2;ncoord++){
+	FreeEditExtremes *extreme=(ncoord==0)?&free_edit->extreme_x:&free_edit->extreme_y;
+	if (extreme->get_scale()==FE_LOG){//logarithmic scale
+		float p10=pow(10,floor(log10(extreme->get_min())));
+		int psteps=(int)(floor(log10(extreme->get_max()/extreme->get_min())))+1;
+		for (int k=1;k<=psteps;k++){
+			for (int i=1;i<10;i++){
+				if (i==1) fl_line_style(FL_SOLID);
+				else if(i==5) fl_line_style(FL_DASH);
+					else  fl_line_style(FL_DOT);
+				float fpos=extreme->real_value_to_coord(p10*i);
+				if ((fpos>0.0)&&(fpos<1.0)){
+					if (ncoord==0){
+						int pos=(int)(fpos*lx);
+						fl_line(ox+pos,oy,ox+pos,oy+ly);
+					}else{
+						int pos=(int)(ly-1-fpos*ly);
+						fl_line(ox,oy+pos,ox+lx,oy+pos);
+					};
+				};
+			};
+			p10*=10.0;
+		};
+	}else{//linear scale
+		float diff=extreme->get_max()-extreme->get_min();
+		float stepsize=pow(10,floor(log10( fabs(diff))))*0.1;
+		if (stepsize>=1e-6){
+			int nsteps=(int)(fabs(diff)/stepsize)+1;
+			if (nsteps>25) {
+				nsteps/=5;
+				stepsize*=5.0;
+			};
+			float min=extreme->get_min();
+			float max=extreme->get_max();
+			float min1=(min<max)?min:max;
+			int kstep=(int)(floor(min1/stepsize));
+			min1=kstep*stepsize;
+			for (int i=0;i<nsteps;i++){
+				float fpos=extreme->real_value_to_coord(min1+i*stepsize);
+				int ks=(i+kstep)%10; if (ks<0) ks+=10;
+				if (ks==0) fl_line_style(FL_SOLID);
+				else if (ks==5) fl_line_style(FL_DASH);
+					else  fl_line_style(FL_DOT);
+				if ((fpos>0.0)&&(fpos<1.0)){
+					if (ncoord==0){
+						int pos=(int)(fpos*lx);
+						fl_line(ox+pos,oy,ox+pos,oy+ly);
+					}else{
+						int pos=(int)(ly-1-fpos*ly);
+						fl_line(ox,oy+pos,ox+lx,oy+pos);
+					};
+				};
+			};
+		};
+	};
+};
+
+
+
+//draw the line
+fl_line_style(FL_SOLID,2);
+fl_color(get_color(labelcolor()));
+float *data=new float[lx];
+
+
+free_edit->get_curve(lx,data,false);
+int oldy=0;
+for (int i=0;i<lx;i++){
+	int newy=(int)((1.0-data[i])*ly);
+	if (i) fl_line(ox+i-1,oy+oldy,ox+i,oy+newy);
+	oldy=newy;
+};
+
+delete[]data;
+
+//draw points
+fl_line_style(FL_SOLID,3);
+for (int i=0;i<free_edit->get_npoints();i++){
+	if (!free_edit->is_enabled(i)) continue;
+	fl_color(FL_BLACK);
+	int x=(int)(free_edit->get_posx(i)*lx);
+	int y=(int)((1.0-free_edit->get_posy(i))*ly);
+	fl_circle(ox+x,oy+y,3);
+	if (i==selected_point){
+		fl_color(get_color(FL_RED));
+		fl_circle(ox+x,oy+y,4);
+		fl_circle(ox+x,oy+y,5);
+	};
+};
+
+
+/*
+//test
+{
+fl_color(FL_RED);
+fl_line_style(FL_SOLID);
+
+free_edit->update_curve();
+
+int oldy=0;
+//printf("draw %g\\n",free_edit->get_value(8000.0));
+//printf("d %g\\n",free_edit->curve.data[1000]);
+
+for (int i=0;i<lx;i++){
+	//int m=(int)(((float)i/(float)lx)*(free_edit->curve.size-1));
+	//REALTYPE y=free_edit->curve.data[m];
+	REALTYPE freq=i/(float)lx*25000.0;
+	REALTYPE y=free_edit->get_value(freq);
+	//if (i<20) printf("%d %g\\n",i,y);
+	//printf("%g %g\\n",freq,y);
+
+
+	int newy=(int)((1.0-y)*ly);
+
+	if (i) fl_line(ox+i-1,oy+oldy,ox+i,oy+newy);
+	oldy=newy;
+};
+};
+*/
+
+
+
+
+/*
+
+
+fl_color(FL_RED);
+fl_line_style(FL_SOLID);
+
+
+	int samplerate=44100;
+	
+
+	int nfreq=lx;
+	float *freq1=new float [nfreq];
+	float *freq2=new float [nfreq];	
+	float *tmpfreq1=new float [nfreq*2];
+
+                for (int i=0;i<nfreq;i++) tmpfreq1[i]=0.0;
+
+	for (int i=0;i<nfreq;i++) freq1[i]=data[i];
+
+        //convert to log spectrum
+        
+        float minfreq=20.0;
+        float maxfreq=0.5*samplerate;
+       for (int i=0;i<nfreq;i++){
+        	float freqx=i/(float) nfreq;
+        	float x=exp(log(minfreq)+freqx*(log(maxfreq)-log(minfreq)))/maxfreq*nfreq;
+        	float y=0.0;
+        	int x0=(int)floor(x); if (x0>=nfreq) x0=nfreq-1;
+        	int x1=x0+1; if (x1>=nfreq) x1=nfreq-1;
+        	float xp=x-x0;
+        	if (x<nfreq){
+        		y=freq1[x0]*(1.0-xp)+freq1[x1]*xp;
+        	};
+        	tmpfreq1[i]=y;
+        };
+    
+    
+       //increase bandwidth of each harmonic
+        int n=2;
+	float bandwidth=free_edit->get_posy(0);
+	float a=1.0-exp(-bandwidth*bandwidth*nfreq*0.002);
+	a=pow(a,n);
+	printf("%g\\n",a);
+
+        for (int k=0;k<n;k++){                                                  
+                tmpfreq1[0]=0.0;
+                for (int i=1;i<nfreq;i++){                                       
+                        tmpfreq1[i]=tmpfreq1[i-1]*a+tmpfreq1[i]*(1.0-a);
+                };                                                              
+                tmpfreq1[nfreq-1]=0.0;                                               
+                for (int i=nfreq-2;i>0;i--){                                     
+                        tmpfreq1[i]=tmpfreq1[i+1]*a+tmpfreq1[i]*(1.0-a);                    
+                };                                                              
+        };                                                                      
+
+        //convert back to linear spectrum
+//        for (int i=0;i<nfreq;i++) freq2[i]=0.0;
+//        for (int i=0;i<nfreq;i++) freq2[i]=tmpfreq1[i];
+
+	freq2[0]=0;
+        for (int i=1;i<nfreq;i++){
+        	float freqx=i/(float) nfreq;
+        	float x=log((freqx*maxfreq)/minfreq)/log(maxfreq/minfreq)*nfreq;
+//        	printf("%g\\n",x);
+        	float y=0.0;
+        	int x0=(int)floor(x); if (x0>=nfreq) x0=nfreq-1;
+        	int x1=x0+1; if (x1>=nfreq) x1=nfreq-1;
+        	float xp=x-x0;
+        	if (x<nfreq){
+        		y=tmpfreq1[x0]*(1.0-xp)+tmpfreq1[x1]*xp;
+        	};
+        	freq2[i]=y;
+        };
+
+        
+
+
+        
+for (int i=0;i<lx;i++){
+	
+	REALTYPE y=freq2[i];
+
+	int newy=(int)((1.0-y)*ly);
+
+
+	if (i) fl_line(ox+i-1,oy+oldy,ox+i,oy+newy);
+	oldy=newy;
+};
+       
+        delete [] freq1;
+        delete [] freq2;
+        delete [] tmpfreq1;
+//        delete [] tmpfreq2;
+*/} {}
+  }
+  Function {handle(int event)} {return_type int
+  } {
+    code {if (!free_edit->get_enabled()) return Fl_Box::handle(event);
+
+int ox=x(),oy=y(),lx=w(),ly=h();
+float px=(Fl::event_x()-ox)/(float)lx;
+float py=1.0-(Fl::event_y()-oy)/(float)ly;
+if (px<0) px=0;
+	else if (px>1.0) px=1.0;
+if (py<0) py=0;
+	else if (py>1.0) py=1.0;
+
+int closest=-1;
+float xyrap=(float)ly/(float)lx;
+for (int i=0;i<free_edit->get_npoints();i++){
+	if (!free_edit->is_enabled(i)) continue;
+	float d=pow(px-free_edit->get_posx(i),2)+pow(py-free_edit->get_posy(i),2)*xyrap;
+	if (d<0.0005) {
+		closest=i;
+		break;
+		
+	};
+};
+
+
+if (event==FL_PUSH){
+	if (closest>=0) {
+		if (Fl::event_button()==1) selected_point=current_point=closest;
+		if ((Fl::event_button()==3)&&(closest>=2)) {
+			free_edit->set_enabled(closest,false);
+			current_point=selected_point=-1;
+		};
+	}else{
+		for (int i=0;i<free_edit->get_npoints();i++){
+			if (!free_edit->is_enabled(i)){
+				selected_point=closest=current_point=i;
+				free_edit->set_posx(current_point,px);
+				free_edit->set_posy(current_point,py);
+				free_edit->set_enabled(i,true);				
+				break;
+			};
+		};		
+	};
+	refresh_value();
+	redraw();
+	update_curve();
+	return true;
+};
+if (event==FL_RELEASE){
+	current_point=-1;
+	refresh_value();
+	update_curve();
+	if (control) control->update_process_parameters();
+	return true;
+};
+
+if (event==FL_DRAG){
+	if (current_point>=0){
+		if (current_point>=2) free_edit->set_posx(current_point,px);
+		free_edit->set_posy(current_point,py);
+		redraw();
+	};
+	refresh_value();
+	update_curve();
+	return true;
+};
+
+return Fl_Box::handle(event);} {}
+  }
+  Function {refresh_value()} {} {
+    code {if (!value_fl) return;
+value_fl->deactivate();
+position_fl->deactivate();
+if (selected_point<0) return;
+if (!free_edit->is_enabled(selected_point)) return;
+value_fl->activate();
+position_fl->activate();
+
+float val=free_edit->extreme_y.coord_to_real_value(free_edit->get_posy(selected_point));
+val=((int)(val*10000.0))/10000.0;
+value_fl->value(val);
+
+
+float pos=free_edit->extreme_x.coord_to_real_value(free_edit->get_posx(selected_point));
+pos=((int)(pos*1000.0))/1000.0;
+position_fl->value(pos);} {}
+  }
+  Function {set_selected_value(float val)} {} {
+    code {if (!value_fl) return;
+if (selected_point<0) return;
+if (!free_edit->is_enabled(selected_point)) return;
+
+free_edit->set_posy(selected_point,free_edit->extreme_y.real_value_to_coord(val));
+redraw();
+update_curve();} {}
+  }
+  Function {set_selected_position(float pos)} {} {
+    code {if (!value_fl) return;
+if (selected_point<0) return;
+if (!free_edit->is_enabled(selected_point)) return;
+
+free_edit->set_posx(selected_point,free_edit->extreme_x.real_value_to_coord(pos));
+redraw();
+update_curve();} {}
+  }
+  Function {set_min_value(float val)} {open
+  } {
+    code {unselect();
+
+free_edit->extreme_y.set_min(val);
+redraw();
+update_curve();} {}
+  }
+  Function {set_max_value(float val)} {open
+  } {
+    code {unselect();
+
+free_edit->extreme_y.set_max(val);
+redraw();
+update_curve();} {}
+  }
+  Function {unselect()} {} {
+    code {selected_point=-1;
+refresh_value();
+redraw();} {}
+  }
+  Function {set_smooth(float smooth)} {} {
+    code {free_edit->set_smooth(smooth);
+redraw();
+update_curve();} {}
+  }
+  Function {set_interp_mode(int interp_mode)} {} {
+    code {free_edit->set_interp_mode((FreeEdit::INTERP_MODE)interp_mode);
+redraw();
+update_curve();} {}
+  }
+  Function {clear()} {} {
+    code {for (int i=2;i<free_edit->get_npoints();i++) free_edit->set_enabled(i,false);
+free_edit->set_all_values(default_value);
+redraw();
+update_curve();} {}
+  }
+  Function {update_curve()} {} {
+    code {free_edit->update_curve();} {}
+  }
+  decl {int current_point,selected_point;} {public
+  }
+  decl {Fl_Value_Input *value_fl,*position_fl,*min_value_fl,*max_value_fl;} {public
+  }
+  decl {FreeEdit *free_edit;} {public
+  }
+  decl {float default_value;} {public
+  }
+  decl {Control *control;} {public
+  }
+} 
+
+class FreeEditControls {open : {public Fl_Group}
+} {
+  Function {FreeEditControls(int x,int y, int w, int h, const char *label=0):Fl_Group(x,y,w,h,label)} {} {
+    code {free_edit_ui=NULL;} {}
+  }
+  Function {~FreeEditControls()} {} {
+    code {hide();} {}
+  }
+  Function {init(FreeEditUI *free_edit_ui_,FREE_EDIT_EXTREME_SCALE scale_x=FE_LINEAR,float min_x=0.0,float max_x=1.0,FREE_EDIT_EXTREME_SCALE scale_val=FE_LINEAR,float min_val=0.0,float max_val=1.0,float default_value=1.0)} {open
+  } {
+    code {free_edit_ui=free_edit_ui_;
+
+make_window();
+end();
+
+free_edit_ui->init_value_io(free_edit_value_fl,free_edit_position_fl,free_edit_min_value_fl,free_edit_max_value_fl);
+feui->resize(this->x(),this->y(),this->w(),this->h());
+
+FreeEdit *fe=free_edit_ui->free_edit;
+
+fe->extreme_x.set_min(min_x);
+fe->extreme_x.set_max(max_x);
+fe->extreme_x.set_scale(scale_x);
+
+fe->extreme_y.set_min(min_val);
+fe->extreme_y.set_max(max_val);
+fe->extreme_y.set_scale(scale_val);
+
+free_edit_min_value_fl->value(min_val);
+free_edit_max_value_fl->value(max_val);
+free_edit_ui->default_value=default_value;
+fe->set_all_values(default_value);
+
+enabled_check->value(fe->get_enabled());} {}
+  }
+  Function {update_parameters()} {open
+  } {
+    code {if (free_edit_ui->control) free_edit_ui->control->update_process_parameters();} {}
+  }
+  Function {make_window()} {open
+  } {
+    Fl_Window feui {open
+      xywh {245 395 85 210} type Double color 50 labelfont 1
+      class Fl_Group visible
+    } {
+      Fl_Group {} {open
+        xywh {0 0 85 210} box PLASTIC_THIN_UP_BOX color 52 labeltype ENGRAVED_LABEL labelsize 10 align 0
+      } {
+        Fl_Value_Input free_edit_min_value_fl {
+          label {Val.Min}
+          callback {free_edit_ui->unselect();
+free_edit_ui->set_min_value(o->value());
+update_parameters();}
+          xywh {5 110 50 15} labelsize 10 align 5 minimum -10000 maximum 10000 textfont 1 textsize 10
+        }
+        Fl_Value_Input free_edit_max_value_fl {
+          label {Val.Max}
+          callback {free_edit_ui->unselect();
+free_edit_ui->set_max_value(o->value());
+update_parameters();}
+          xywh {5 140 50 15} labelsize 10 align 5 minimum -10000 maximum 10000 value 1 textfont 1 textsize 10
+        }
+        Fl_Value_Input free_edit_value_fl {
+          label Value
+          callback {free_edit_ui->set_selected_value(o->value());
+update_parameters();}
+          xywh {5 75 70 15} labelfont 1 labelsize 10 align 5 minimum 0.03 maximum 100 value 0.5 textfont 1 textsize 10 deactivate
+        }
+        Fl_Roller free_edit_smooth {
+          label Sm
+          callback {free_edit_ui->set_smooth(o->value());
+update_parameters();}
+          tooltip {Smooth function} xywh {60 110 15 45} labelsize 10 align 1 when 4 minimum 1 maximum 0 step 0.01
+        }
+        Fl_Choice free_edit_interpolate {
+          label Interpolate
+          callback {free_edit_ui->set_interp_mode(o->value());
+update_parameters();}
+          xywh {5 170 70 15} down_box BORDER_BOX labelsize 11 align 5 textfont 1 textsize 10
+        } {
+          MenuItem {} {
+            label Linear
+            xywh {10 10 36 21} labelfont 1 labelsize 10
+          }
+          MenuItem {} {
+            label Cosine
+            xywh {10 10 36 21} labelfont 1 labelsize 10
+          }
+        }
+        Fl_Button {} {
+          label clear
+          callback {if (!fl_choice("Delete all points?","No","Yes",NULL)) return;
+free_edit_ui->clear();
+update_parameters();}
+          xywh {5 190 75 15} labelsize 12
+        }
+        Fl_Light_Button enabled_check {
+          label Enable
+          callback {free_edit_ui->free_edit->set_enabled(o->value());
+free_edit_ui->update_curve();
+free_edit_ui->redraw();
+update_parameters();}
+          xywh {5 5 75 20} color 7 selection_color 88 labelfont 1
+        }
+        Fl_Value_Input free_edit_position_fl {
+          label Position
+          callback {free_edit_ui->set_selected_position(o->value());
+update_parameters();}
+          xywh {5 45 70 15} labelsize 10 align 5 minimum 0.0001 maximum 10000 value 1 textfont 1 textsize 10 deactivate
+        }
+      }
+    }
+  }
+  Function {refresh()} {open
+  } {
+    code {enabled_check->value(free_edit_ui->free_edit->get_enabled());
+
+free_edit_min_value_fl->value(free_edit_ui->free_edit->extreme_y.get_min());
+free_edit_max_value_fl->value(free_edit_ui->free_edit->extreme_y.get_max());
+free_edit_interpolate->value(free_edit_ui->free_edit->get_interp_mode());
+free_edit_smooth->value(free_edit_ui->free_edit->get_smooth());
+
+free_edit_ui->update_curve();
+free_edit_ui->redraw();
+update_parameters();} {selected
+    }
+  }
+  decl {FreeEditUI *free_edit_ui;} {}
+} 

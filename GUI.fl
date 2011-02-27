@@ -1,0 +1,933 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0110 
+header_name {.h} 
+code_name {.cxx}
+decl {//Copyright (c) Nasca Octavian Paul. Released under GNU General Public License version 2} {public
+} 
+
+decl {\#include <FL/Fl_File_Chooser.H>} {} 
+
+decl {\#include <FL/Fl_Box.H>} {public
+} 
+
+decl {\#include <FL/Fl_Group.H>} {public
+} 
+
+decl {\#include <FL/Fl_Box.H>} {public
+} 
+
+decl {\#include <FL/fl_draw.H>} {public
+} 
+
+decl {\#include <FL/Fl_Value_Input.H>} {public
+} 
+
+decl {\#include <FL/fl_ask.H>} {public
+} 
+
+decl {\#include<sys/stat.h>} {} 
+
+decl {\#include <stdio.h>} {} 
+
+decl {\#include <string>} {} 
+
+decl {\#include <math.h>} {} 
+
+decl {\#include "Control.h"} {public
+} 
+
+decl {\#include "FreeEditUI.h"} {public
+} 
+
+decl {\#include "version.h"} {public
+} 
+
+Function {hex4n(char c)} {return_type int
+} {
+  code {if (c>96) c-=32;
+if ((c>='0')||(c<='9')) return (c-'0');
+if ((c>='A')||(c<='F')) return (c-'A')+10;
+
+return 0;} {}
+} 
+
+Function {unescape(std::string s)} {return_type {std::string}
+} {
+  code {std::string result;
+int slen=s.size();
+s+="    ";
+int sk=0;
+while (sk<slen){
+	char c=s[sk];
+	if (c=='%'){
+		char c1=s[++sk];
+		char c2=s[++sk];
+		result+=(char)(16*hex4n(c1)+hex4n(c2));
+		sk++;
+	}else{
+		result+=c;
+		sk++;
+	};
+};
+
+
+//printf("%s\\n%s\\n",s.c_str(),result.c_str());
+return result;} {}
+} 
+
+class DDBox {: {public Fl_Box}
+} {
+  Function {DDBox(int x, int y, int w, int h, const char *label = 0):Fl_Box(x,y,w,h,label)} {open
+  } {
+    code {new_drag_file=false;} {}
+  }
+  Function {handle(int event)} {open return_type int
+  } {
+    code {if ((event==FL_DND_ENTER)||(event==FL_DND_DRAG)||(event==FL_DND_RELEASE)) return 1;
+if (event==FL_PASTE){
+	const char *url=Fl::event_text();
+	if (strstr(url,"file://")!=url) return 0;//is not a file
+	std::string filename=url+7;
+	for (int i=0;i<filename.size();i++) if (filename[i]<32) filename[i]=0;
+	drag_file=unescape(filename);
+	new_drag_file=true;
+	return 1;
+};
+return Fl_Box::handle(event);} {}
+  }
+  decl {std::string drag_file;} {public
+  }
+  decl {bool new_drag_file;} {public
+  }
+} 
+
+class GUI {open
+} {
+  decl {enum Mode {STOP,PLAY,PAUSE,FREEZE};} {}
+  Function {GUI()} {} {
+    code {playing_for_button=false;
+eof_for_button=false;
+rendering=false;
+make_window();
+tick(this);
+refresh();
+set_mode(STOP);} {}
+  }
+  Function {~GUI()} {} {
+    code {Fl::remove_timeout(tick,this);} {}
+  }
+  Function {open_input_file(const char *filename)} {open
+  } {
+    code {const char *ext=fl_filename_ext(filename);
+FILE_TYPE intype=FILE_WAV;
+if ((strcmp(ext,".ogg")==0)||(strcmp(ext,".OGG")==0)||(strcmp(ext,".Ogg")==0)) intype=FILE_VORBIS;
+if ((strcmp(ext,".mp3")==0)||(strcmp(ext,".MP3")==0)||(strcmp(ext,".Mp3")==0)) intype=FILE_MP3;
+bool result=control.set_input_filename(filename,intype);
+if (result) {
+	infilename_output->copy_label(control.get_input_filename_and_info().c_str());
+} else {
+	infilename_output->copy_label("");
+	fl_alert("Error: Could not open audio file:\\n%s",filename);
+};
+refresh();} {}
+  }
+  Function {render()} {open
+  } {
+    code {render_button->deactivate();
+rendering=true;
+render_percent_slider->value(0);
+render_percent_slider->activate();
+cancel_render_button->activate();
+//char defaultfile[FL_PATH_MAX];
+//fl_filename_absolute(defaultfile,control.get_recommanded_output_filename().c_str());
+Fl_File_Chooser *fc=new Fl_File_Chooser(NULL,"Wave files (*.wav)\\tOgg Vorbis (*.ogg)",Fl_File_Chooser::CREATE,"Render to audio file...");
+
+fc->preview(0);
+fc->filter_value(0);
+fc->ok_label("Render");
+fc->show();
+while (fc->visible()){
+	Fl::wait();
+};
+
+const char *newfile = fc->value();
+  if (newfile != NULL) {  	
+  	if (file_exists(newfile)){
+  		if (!fl_choice("The file exists. \\nOverwrite it?","No","Yes",NULL)) return;
+  	};
+
+	FILE_TYPE type=FILE_WAV;
+	if (fc->filter_value()==1)  type=FILE_VORBIS;
+	const char *ext=fl_filename_ext(newfile);
+	std::string outfilename=newfile;
+	if (strlen(ext)==0){
+		if (type==FILE_VORBIS) outfilename+=".ogg";
+			else outfilename+=".wav";
+	};
+	render_percent_slider->copy_label(outfilename.c_str());
+	FILE_TYPE intype=FILE_WAV;
+	{
+		const char *ext=fl_filename_ext(control.get_input_filename().c_str());
+ 		if ((strcmp(ext,".ogg")==0)||(strcmp(ext,".OGG")==0)||(strcmp(ext,".Ogg")==0)) intype=FILE_VORBIS;
+ 		if ((strcmp(ext,".MP3")==0)||(strcmp(ext,".mp3")==0)||(strcmp(ext,".Mp3")==0)) intype=FILE_MP3;
+  	};
+	const char *outstr=control.Render(control.get_input_filename(),outfilename,type,intype,
+		selection_pos1->value()/100.0,selection_pos2->value()/100.0).c_str();
+	if (strlen(outstr)!=0) fl_alert("%s",outstr);
+  };
+
+delete fc;
+render_button->activate();
+render_percent_slider->value(0);
+render_percent_slider->deactivate();
+render_percent_slider->label("");
+cancel_render_button->deactivate();
+rendering=false;} {}
+  }
+  Function {make_window()} {open private
+  } {
+    Fl_Window window {
+      label {Paul's Extreme Sound Stretch} open
+      xywh {54 265 995 550} type Double resizable
+      code0 {if(strlen(VERSION)<2) {o->color(FL_BLUE); o->label("VERSION NOT SET!!!!!!!!!!!!");};} visible
+    } {
+      Fl_Menu_Bar {} {open
+        xywh {0 0 1015 20}
+      } {
+        Submenu {} {
+          label File open
+          xywh {0 0 63 20}
+        } {
+          MenuItem {} {
+            label {Open audio file...}
+            callback {char *newfile = fl_file_chooser("Open Audio(ogg,wav,mp3) File?", NULL, NULL);
+  if (newfile != NULL) {
+  	open_input_file(newfile);
+  	
+  };
+  selection_pos1->value(0.0);
+  selection_pos2->value(100.0);
+
+  refresh();}
+            xywh {0 0 30 20}
+          }
+          MenuItem render_menu {
+            label {Render and save audio file...}
+            callback {selection_pos1->value(0.0);
+selection_pos2->value(100.0);
+tabs_widget->value(write_to_file_group);
+render();}
+            xywh {10 10 30 20} deactivate divider
+          }
+          MenuItem {} {
+            label {Open Parameters...}
+            callback {char *newfile = fl_file_chooser("Open Parameter File?", "PaulStretch XML (*.psx)\\tAll Files (*)", NULL);
+  if (newfile != NULL) {
+	set_mode(STOP);
+	control.stopplay();
+ 
+  	if (!control.load_parameters(newfile)){
+  		fl_alert("Error: Could not load parameter file:\\n%s",newfile);
+  	};
+  };
+  refreshgui();
+  refresh();}
+            xywh {10 10 30 20}
+          }
+          MenuItem {} {
+            label {Save Parameters...}
+            callback {char *newfile = fl_file_chooser("Save Parameters(paulstretch) File?", "PaulStretch XML (*.psx)\\tAll Files (*)", NULL);
+  if (newfile != NULL) {
+  	if (file_exists(newfile)){
+  		if (!fl_choice("The file exists. \\nOverwrite it?","No","Yes",NULL)) return;
+  	};
+  	control.save_parameters(newfile);
+  };
+  refresh();}
+            xywh {20 20 30 20} divider
+          }
+          MenuItem {} {
+            label Exit
+            callback {window->hide();}
+            xywh {0 0 30 20}
+          }
+        }
+        Submenu {} {
+          label About
+          xywh {15 15 63 20}
+        } {
+          MenuItem {} {
+            label {About...}
+            callback {aboutwindow->show();}
+            xywh {15 15 30 20}
+          }
+        }
+      }
+      Fl_Tabs tabs_widget {open
+        xywh {5 50 985 420} box BORDER_BOX
+      } {
+        Fl_Group {} {
+          label Parameters open selected
+          xywh {5 70 985 400}
+        } {
+          Fl_Slider stretch_slider {
+            label {Stretch:}
+            callback {refresh();
+control.update_player_stretch();}
+            xywh {10 89 975 15} type {Horz Knob} box FLAT_BOX align 6 value 0.29
+          }
+          Fl_Slider fftsize_slider {
+            label {Window Size:}
+            callback {refresh();
+o->labelcolor(FL_BLUE);}
+            xywh {10 155 975 15} type {Horz Knob} box FLAT_BOX align 6 value 0.47
+          }
+          Fl_Choice mode_choice {
+            label {Mode:}
+            callback {refresh();}
+            xywh {850 110 135 20} down_box BORDER_BOX
+          } {
+            MenuItem {} {
+              label Stretch
+              xywh {10 10 30 20}
+            }
+            MenuItem {} {
+              label HyperStretch
+              xywh {20 20 30 20}
+            }
+            MenuItem {} {
+              label Shorten
+              xywh {0 0 30 20}
+            }
+          }
+          Fl_Choice window_choice {
+            label {Type:}
+            callback {FFTWindow w=W_RECTANGULAR;
+switch(o->value()){
+	case 0:
+	   w=W_RECTANGULAR;
+	   break;
+	case 1:
+	   w=W_HAMMING;
+	   break;
+	case 2:
+	   w=W_HANN;
+	   break;
+	case 3:
+	   w=W_BLACKMAN;
+	   break;
+	case 4:
+	   w=W_BLACKMAN_HARRIS;
+	   break;
+};
+
+control.set_window_type(w);
+refresh();}
+            xywh {850 185 135 20} down_box BORDER_BOX when 1
+            code0 {o->value(2);}
+          } {
+            MenuItem {} {
+              label Rectangular
+              xywh {40 40 30 20}
+            }
+            MenuItem {} {
+              label Hamming
+              xywh {30 30 30 20}
+            }
+            MenuItem {} {
+              label Hann
+              xywh {10 10 30 20}
+            }
+            MenuItem {} {
+              label Blackman
+              xywh {20 20 30 20}
+            }
+            MenuItem {} {
+              label BlackmanHarris
+              xywh {30 30 30 20}
+            }
+          }
+          Fl_Button {} {
+            label S
+            callback {char tmp[100];
+snprintf(tmp,100,"%g",control.get_stretch());
+const char *result=fl_input("Enter the stretch value",tmp);
+if (!result) return;
+
+double str=atof(result);
+if (str<1e-4) return;
+
+double stc=control.get_stretch_control(str,mode_choice->value());
+
+if ((stc<1e-4)||(stc>1.0)) return;
+stretch_slider->value(stc);
+stretch_slider->do_callback();}
+            tooltip {set the stretch to a value} xywh {780 110 20 20}
+          }
+          Fl_Box resolution_box {
+            xywh {10 187 790 18} box FLAT_BOX color 52 align 20
+          }
+          Fl_Group {} {
+            label {Stretch Multiplier} open
+            xywh {10 245 975 220} box THIN_UP_BOX labeltype ENGRAVED_LABEL
+          } {
+            Fl_Box stretch_free_edit {
+              label Graph
+              xywh {105 250 875 210} box FLAT_BOX color 17
+              code0 {o->init(&control.ppar.stretch_multiplier,&control);}
+              class FreeEditUI
+            }
+            Fl_Group stretch_multiplier_control {open
+              xywh {15 250 85 210} box BORDER_FRAME color 0 align 208
+              code0 {o->init(stretch_free_edit,FE_LINEAR,0,100.0,FE_LOG,0.1,50.0,1.0);}
+              class FreeEditControls
+            } {}
+          }
+        }
+        Fl_Group {} {
+          label Process
+          xywh {5 70 985 400} hide
+        } {
+          Fl_Group {} {open
+            xywh {165 75 105 65} box BORDER_BOX
+          } {
+            Fl_Check_Button pitch_shift_enabled {
+              label {Pitch Shift}
+              callback {control.ppar.pitch_shift.enabled=o->value();
+control.update_process_parameters();}
+              xywh {170 80 90 15} down_box DOWN_BOX labelfont 1
+            }
+            Fl_Counter pitch_shift_cents {
+              label cents
+              callback {control.ppar.pitch_shift.cents=(int)o->value();
+control.update_process_parameters();}
+              xywh {170 100 90 20} minimum -3600 maximum 3600 step 1
+              code0 {o->lstep(100);}
+            }
+          }
+          Fl_Group {} {open
+            xywh {275 75 135 100} box BORDER_BOX
+          } {
+            Fl_Check_Button octave_enabled {
+              label {Octave Mixer}
+              callback {control.ppar.octave.enabled=o->value();
+control.update_process_parameters();}
+              xywh {280 80 110 15} down_box DOWN_BOX labelfont 1
+            }
+            Fl_Slider octave_om2 {
+              label {-2}
+              callback {control.ppar.octave.om2=pow(o->value(),2.0);
+control.update_process_parameters();}
+              tooltip {2 octaves below} xywh {280 100 15 55} type {Vert Knob} minimum 1 maximum 0
+            }
+            Fl_Slider octave_om1 {
+              label {-1}
+              callback {control.ppar.octave.om1=pow(o->value(),2.0);
+control.update_process_parameters();}
+              tooltip {1 octave below} xywh {300 100 15 55} type {Vert Knob} minimum 1 maximum 0
+            }
+            Fl_Slider octave_o0 {
+              label 0
+              callback {control.ppar.octave.o0=pow(o->value(),2.0);
+control.update_process_parameters();}
+              tooltip {original (dry)} xywh {320 100 15 55} type {Vert Knob} minimum 1 maximum 0 value 1
+            }
+            Fl_Slider octave_o1 {
+              label 1
+              callback {control.ppar.octave.o1=pow(o->value(),2.0);
+control.update_process_parameters();}
+              tooltip {1 octave above} xywh {340 100 15 55} type {Vert Knob} minimum 1 maximum 0
+            }
+            Fl_Slider octave_o15 {
+              label {1.5}
+              callback {control.ppar.octave.o15=pow(o->value(),2.0);
+control.update_process_parameters();}
+              tooltip {3rd harmonic} xywh {360 100 15 55} type {Vert Knob} minimum 1 maximum 0
+            }
+            Fl_Slider octave_o2 {
+              label 2
+              callback {control.ppar.octave.o2=pow(o->value(),2.0);
+control.update_process_parameters();}
+              tooltip {2 octaves above} xywh {380 100 15 55} type {Vert Knob} minimum 1 maximum 0
+            }
+          }
+          Fl_Group {} {open
+            xywh {165 140 105 65} box BORDER_BOX
+          } {
+            Fl_Check_Button freq_shift_enabled {
+              label {Freq Shift}
+              callback {control.ppar.freq_shift.enabled=o->value();
+control.update_process_parameters();}
+              xywh {170 145 90 15} down_box DOWN_BOX labelfont 1
+            }
+            Fl_Counter freq_shift_Hz {
+              label Hz
+              callback {control.ppar.freq_shift.Hz=(int)o->value();
+control.update_process_parameters();}
+              xywh {170 165 90 20} minimum -10000 maximum 10000 step 1
+              code0 {o->lstep(100);}
+            }
+          }
+          Fl_Group {} {open
+            xywh {605 75 120 65} box BORDER_BOX
+          } {
+            Fl_Check_Button compressor_enabled {
+              label Compress
+              callback {control.ppar.compressor.enabled=o->value();
+control.update_process_parameters();}
+              xywh {610 80 90 15} down_box DOWN_BOX labelfont 1
+            }
+            Fl_Slider compressor_power {
+              label Power
+              callback {control.ppar.compressor.power=o->value();
+control.update_process_parameters();}
+              xywh {610 100 110 15} type {Horz Knob}
+            }
+          }
+          Fl_Slider {} {
+            label Volume
+            callback {REALTYPE x=o->value();
+x=pow(10.0,pow(x,1.5)-1.0)-0.1;
+control.set_volume(x);}
+            xywh {605 155 120 40} type {Horz Knob} labelfont 1 minimum 0.3 maximum 1.6 value 1
+          }
+          Fl_Group {} {open
+            xywh {415 75 185 100} box BORDER_BOX
+          } {
+            Fl_Check_Button filter_enabled {
+              label Filter
+              callback {control.ppar.filter.enabled=o->value();
+control.update_process_parameters();}
+              xywh {420 80 70 15} down_box DOWN_BOX labelfont 1
+            }
+            Fl_Value_Input filter_low {
+              label {Freq1(Hz)}
+              callback {control.ppar.filter.low=o->value();
+control.update_process_parameters();}
+              xywh {420 101 100 24} align 8 maximum 10000
+            }
+            Fl_Value_Input filter_high {
+              label {Freq2(Hz)}
+              callback {control.ppar.filter.high=o->value();
+control.update_process_parameters();}
+              xywh {420 126 100 24} align 8 maximum 25000 value 22000
+            }
+            Fl_Check_Button filter_stop {
+              label BandStop
+              callback {control.ppar.filter.stop=o->value();
+control.update_process_parameters();}
+              tooltip {band-stop filter} xywh {500 80 90 15} down_box DOWN_BOX
+            }
+            Fl_Slider filter_hdamp {
+              label DHF
+              callback {control.ppar.filter.hdamp=o->value();
+control.update_process_parameters();}
+              tooltip {Damp High Frequency} xywh {420 155 140 15} type {Horz Knob} align 8
+            }
+          }
+          Fl_Group {} {open
+            xywh {10 75 150 120} box BORDER_BOX
+          } {
+            Fl_Check_Button harmonics_enabled {
+              label Harmonics
+              callback {control.ppar.harmonics.enabled=o->value();
+control.update_process_parameters();}
+              xywh {15 80 95 15} down_box DOWN_BOX labelfont 1
+            }
+            Fl_Value_Input harmonics_freq {
+              label {F.Freq(Hz)}
+              callback {control.ppar.harmonics.freq=o->value();
+control.update_process_parameters();}
+              tooltip {fundamental frequency} xywh {15 101 65 24} align 8 minimum 1 maximum 20000 value 440
+            }
+            Fl_Value_Input harmonics_bandwidth {
+              label {BW(cents)}
+              callback {control.ppar.harmonics.bandwidth=o->value();
+control.update_process_parameters();}
+              tooltip {bandwidth (cents)} xywh {15 126 65 24} align 8 minimum 0.1 maximum 200 value 25
+            }
+            Fl_Check_Button harmonics_gauss {
+              label Gauss
+              callback {control.ppar.harmonics.gauss=o->value();
+control.update_process_parameters();}
+              tooltip {smooth the harmonics} xywh {85 155 65 15} down_box DOWN_BOX
+            }
+            Fl_Counter harmonics_nharmonics {
+              label {no.hrm.}
+              callback {control.ppar.harmonics.nharmonics=(int)o->value();
+control.update_process_parameters();}
+              tooltip {number of harmonics} xywh {15 155 56 20} type Simple minimum 1 maximum 100 step 1 value 10
+            }
+          }
+          Fl_Group {} {open
+            xywh {275 180 325 40} box BORDER_BOX
+          } {
+            Fl_Check_Button spread_enabled {
+              label Spread
+              callback {control.ppar.spread.enabled=o->value();
+control.update_process_parameters();}
+              xywh {280 185 90 15} down_box DOWN_BOX labelfont 1
+            }
+            Fl_Slider spread_bandwidth {
+              label Bandwidth
+              callback {control.ppar.spread.bandwidth=o->value();
+control.update_process_parameters();}
+              xywh {360 185 230 15} type {Horz Knob} value 0.3
+            }
+          }
+          Fl_Group {} {
+            label ArbitraryFilter
+            xywh {10 245 975 220} box THIN_UP_BOX labeltype ENGRAVED_LABEL
+          } {
+            Fl_Box filter_free_edit {
+              label Graph
+              xywh {105 250 875 210} box FLAT_BOX color 206 selection_color 0
+              code0 {o->init(&control.ppar.free_filter,&control);}
+              class FreeEditUI
+            }
+            Fl_Group arbitrary_filter_control {open
+              xywh {15 250 85 210} box BORDER_FRAME color 0 align 208
+              code0 {o->init(filter_free_edit,FE_LOG,20.0,25000.0,FE_DB,-60,20,0.0);}
+              class FreeEditControls
+            } {}
+          }
+        }
+        Fl_Group {} {
+          label {Binaural beats}
+          xywh {5 70 985 400} box THIN_UP_BOX hide
+        } {
+          Fl_Box binaural_free_edit {
+            label Graph
+            xywh {135 75 845 390} box FLAT_BOX color 135
+            code0 {o->init(&control.bbpar.free_edit,&control);}
+            class FreeEditUI
+          }
+          Fl_Slider bbpar_mono {
+            label Pow
+            callback {control.bbpar.mono=o->value();
+control.update_process_parameters();}
+            xywh {105 75 20 190} type {Vert Knob} labelfont 1 minimum 1 maximum 0 value 0.5
+          }
+          Fl_Group binaural_beats_control {
+            label {FreeEdit Controls}
+            xywh {10 75 80 205} box BORDER_FRAME color 47 align 208
+            code0 {o->init(binaural_free_edit,FE_LINEAR,0,100.0,FE_LOG,0.1,50.0,8.0);}
+            class FreeEditControls
+          } {}
+          Fl_Choice bbpar_stereo_mode {
+            label {Stereo Mode}
+            callback {control.bbpar.stereo_mode=(BB_STEREO_MODE)o->value();
+control.update_process_parameters();}
+            xywh {10 305 110 20} down_box BORDER_BOX align 5
+          } {
+            MenuItem {} {
+              label LeftRight
+              xywh {10 10 36 21} labelfont 1
+            }
+            MenuItem {} {
+              label RightLeft
+              xywh {20 20 36 21} labelfont 1
+            }
+            MenuItem {} {
+              label Symmetric
+              xywh {30 30 36 21} labelfont 1
+            }
+          }
+        }
+        Fl_Group write_to_file_group {
+          label {Write to file} open
+          xywh {5 70 985 400} hide
+        } {
+          Fl_Button render_button {
+            label {Render selection...}
+            callback {render();}
+            xywh {250 95 320 30} labelfont 1 labelsize 22
+          }
+          Fl_Value_Slider render_percent_slider {
+            label { }
+            xywh {15 245 970 65} type {Horz Fill} selection_color 4 align 70 maximum 100 step 0.1 textsize 14
+          }
+          Fl_Button cancel_render_button {
+            label Cancel
+            callback {if (fl_choice("Cancel audio rendering?","No","Yes",NULL)) control.info.cancel_render=true;}
+            xywh {400 365 145 25} deactivate
+          }
+          Fl_Button {} {
+            label {selection pos1}
+            callback {selection_pos1->value(seek_slider->value());}
+            tooltip {set selection start from Player's position} xywh {20 85 110 20} align 20
+          }
+          Fl_Button {} {
+            label {selection pos2}
+            callback {selection_pos2->value(seek_slider->value());}
+            tooltip {set selection end from Player's position} xywh {20 110 110 20} align 20
+          }
+          Fl_Button {} {
+            label {select all}
+            callback {selection_pos1->value(0.0);
+selection_pos2->value(100.0);}
+            tooltip {select the whole sound} xywh {20 135 110 20}
+          }
+          Fl_Value_Output selection_pos1 {
+            label {%}
+            xywh {135 85 70 20} align 72 maximum 100 step 0.01 textfont 1
+          }
+          Fl_Value_Output selection_pos2 {
+            label {%}
+            xywh {135 111 70 18} align 72 maximum 100 step 0.01 value 100 textfont 1
+          }
+          Fl_Check_Button {} {
+            label 32bit
+            callback {control.wav32bit=o->value();}
+            xywh {250 135 100 15} down_box DOWN_BOX
+          }
+        }
+      }
+      Fl_Box infilename_output {
+        tooltip {drag audio file here to open it} xywh {5 24 1005 22} box FLAT_BOX color 17 align 84
+        class DDBox
+      }
+      Fl_Group {} {
+        xywh {5 475 985 70} box BORDER_BOX
+      } {
+        Fl_Group {} {open
+          xywh {10 490 190 40} box THIN_UP_BOX color 16
+        } {
+          Fl_Button play_button {
+            label {@>}
+            callback {if (control.playing_eof()&&(seek_slider->value()>99.0)){
+	seek_slider->value(0.0);
+	seek_slider->do_callback();
+};
+set_mode(PLAY);
+playing_for_button=true;
+eof_for_button=true;
+
+bool bypass=false;
+if (Fl::event_button()==FL_RIGHT_MOUSE) bypass=true;
+
+control.startplay(bypass);}
+            tooltip Play xywh {20 500 40 20} box PLASTIC_UP_BOX
+          }
+          Fl_Button freeze_button {
+            label {@<-> F}
+            callback {control.freezeplay();
+set_mode(FREEZE);}
+            tooltip Freeze xywh {65 500 40 20} box PLASTIC_UP_BOX
+          }
+          Fl_Button {} {
+            label {@||}
+            callback {set_mode(PAUSE);
+control.pauseplay();}
+            tooltip Pause xywh {110 500 40 20} box PLASTIC_UP_BOX
+          }
+          Fl_Button {} {
+            label {@square}
+            callback {set_mode(STOP);
+control.stopplay();}
+            tooltip Stop xywh {155 500 40 20} box PLASTIC_UP_BOX
+          }
+        }
+        Fl_Value_Slider seek_slider {
+          label Percents
+          callback {control.set_seek_pos(o->value()/o->maximum());}
+          xywh {205 490 780 20} type {Horz Knob} box THIN_UP_BOX color 16 selection_color 4 align 6 maximum 100 textsize 14
+        }
+      }
+    }
+    Fl_Window aboutwindow {
+      label {About...}
+      xywh {274 354 300 170} type Double color 7 hide modal
+    } {
+      Fl_Button {} {
+        label OK
+        callback {aboutwindow->hide();}
+        xywh {110 140 64 20}
+      }
+      Fl_Box {} {
+        label {Copyright (c) 2006-2011 Nasca Octavian PAUL, Tg. Mures, Romania}
+        xywh {10 93 280 37} align 128
+      }
+      Fl_Box {} {
+        label {This is a software for extreme time stretching of the audio.}
+        xywh {5 53 290 32} align 128
+      }
+      Fl_Box {} {
+        label {Paul's Extreme Sound Stretch}
+        xywh {20 6 255 21} labelfont 1 align 128
+      }
+      Fl_Box {} {
+        label version
+        xywh {20 26 255 19} labelfont 1 align 128
+        code0 {o->label(VERSION);}
+      }
+    }
+  }
+  Function {set_mode(Mode mode)} {private
+  } {
+    code {switch (mode){
+	case STOP:
+		play_button->labelcolor(FL_BLACK);
+		mode_choice->activate();
+		freeze_button->deactivate();
+	break;
+
+	case PAUSE:
+		play_button->labelcolor(FL_BLACK);
+		mode_choice->activate();
+	break;
+	
+	case PLAY:
+		play_button->labelcolor(FL_RED);
+		mode_choice->deactivate();
+		fftsize_slider->labelcolor(FL_BLACK);
+		freeze_button->activate();
+	break;
+	
+	case FREEZE:
+		if (control.is_freeze()) freeze_button->labelcolor(FL_GREEN);
+			else freeze_button->labelcolor(FL_BLACK);
+	break;
+};
+window->redraw();} {}
+  }
+  Function {refresh()} {open
+  } {
+    code {double stretch_s=stretch_slider->value()/stretch_slider->maximum();
+
+int mode=mode_choice->value();
+double resolution_s=fftsize_slider->value()/fftsize_slider->maximum();
+
+control.set_stretch_controls(stretch_s,mode,resolution_s);
+
+stretch_slider->copy_label(control.get_stretch_info().c_str());
+fftsize_slider->copy_label(control.get_fftsize_info().c_str());
+resolution_box->copy_label(control.get_fftresolution_info().c_str());
+
+bool may_render=false;
+if (infilename_output->label()!=NULL){
+	if (strlen(infilename_output->label())!=0)  
+	  may_render=true;
+};
+if (!rendering){//do not change the status of render button while rendering
+	if (may_render) {
+		render_button->activate();
+		render_menu->activate();
+	} else {
+		render_button->deactivate();
+		render_menu->deactivate();
+	};
+};} {}
+  }
+  Function {refreshgui()} {open
+  } {
+    code {stretch_slider->value(control.gui_sliders.stretch_s);
+fftsize_slider->value(control.gui_sliders.fftsize_s);
+mode_choice->value(control.gui_sliders.mode_s);
+window_choice->value(control.window_type);
+
+
+
+pitch_shift_enabled->value(control.ppar.pitch_shift.enabled);
+pitch_shift_cents->value(control.ppar.pitch_shift.cents);
+
+octave_enabled->value(control.ppar.octave.enabled);
+octave_om2->value(control.ppar.octave.om2);
+octave_om1->value(control.ppar.octave.om1);
+octave_o0->value(control.ppar.octave.o0);
+octave_o1->value(control.ppar.octave.o1);
+octave_o15->value(control.ppar.octave.o15);
+octave_o2->value(control.ppar.octave.o2);
+
+freq_shift_enabled->value(control.ppar.freq_shift.enabled);
+freq_shift_Hz->value(control.ppar.freq_shift.Hz);
+
+compressor_enabled->value(control.ppar.compressor.enabled);
+compressor_power->value(control.ppar.compressor.power);
+
+filter_enabled->value(control.ppar.filter.enabled);
+filter_stop->value(control.ppar.filter.stop);
+filter_low->value(control.ppar.filter.low);
+filter_high->value(control.ppar.filter.high);
+filter_hdamp->value(control.ppar.filter.hdamp);
+
+harmonics_enabled->value(control.ppar.harmonics.enabled);
+harmonics_freq->value(control.ppar.harmonics.freq);
+harmonics_bandwidth->value(control.ppar.harmonics.bandwidth);
+harmonics_nharmonics->value(control.ppar.harmonics.nharmonics);
+harmonics_gauss->value(control.ppar.harmonics.gauss);
+
+spread_enabled->value(control.ppar.spread.enabled);
+spread_bandwidth->value(control.ppar.spread.bandwidth);
+
+
+bbpar_mono->value(control.bbpar.mono);
+bbpar_stereo_mode->value(control.bbpar.stereo_mode);
+
+
+stretch_multiplier_control->refresh();
+arbitrary_filter_control->refresh();
+binaural_beats_control->refresh();} {}
+  }
+  Function {tickrefresh()} {} {
+    code {seek_slider->value(seek_slider->maximum()*control.get_seek_pos());
+
+if (playing_for_button&&control.playing()){
+	play_button->labelcolor(FL_GREEN);
+	window->redraw();
+	playing_for_button=false;
+};
+if (eof_for_button&&control.playing_eof()){
+	play_button->labelcolor(FL_BLACK);
+	window->redraw();
+	eof_for_button=false;
+};
+
+if (control.info.render_percent>0.0){
+	render_percent_slider->value(control.info.render_percent);
+};
+if (infilename_output->new_drag_file){
+    open_input_file(infilename_output->drag_file.c_str());
+    infilename_output->new_drag_file=false;
+};} {}
+  }
+  Function {tickdraw(GUI *o)} {return_type {static void}
+  } {
+    code {o->tickrefresh();} {}
+  }
+  Function {tick(void *v)} {return_type {static void}
+  } {
+    code {tickdraw((GUI *) v);
+Fl::add_timeout(1.0/3.0,tick,v);//3 fps} {}
+  }
+  decl {Control control;} {}
+  decl {bool playing_for_button;} {}
+  decl {bool rendering;} {}
+  decl {bool eof_for_button;} {}
+} 
+
+Function {file_exists(const char *filename)} {return_type bool
+} {
+  code {struct stat buf;
+int i = stat ( filename, &buf );
+// File exists
+if ( i == 0 ) return true;
+  else  return false;} {}
+} 
+
+Function {main(int argc, char *argv[])} {return_type int
+} {
+  code {GUI *gui=new GUI();
+
+if (argc>1){
+	gui->open_input_file(argv[1]);
+};
+gui->window->show();
+
+
+Fl::run();
+
+delete gui;
+
+return 0;} {}
+} 
