@@ -125,11 +125,11 @@ ProcessedStretch::ProcessedStretch(REALTYPE rap_,int in_bufsize_,FFTWindow w,boo
 	sumfreq=new REALTYPE[nfreq];
 	tmpfreq1=new REALTYPE[nfreq];
 	tmpfreq2=new REALTYPE[nfreq];
-	fbfreq=new REALTYPE[nfreq];
+	//fbfreq=new REALTYPE[nfreq];
 	free_filter_freqs=new REALTYPE[nfreq];
 	for (int i=0;i<nfreq;i++) {
 		free_filter_freqs[i]=1.0;
-		fbfreq[i]=0.0;
+	//	fbfreq[i]=0.0;
 	};
 };
 ProcessedStretch::~ProcessedStretch(){
@@ -138,7 +138,7 @@ ProcessedStretch::~ProcessedStretch(){
 	delete [] tmpfreq1;
 	delete [] tmpfreq2;
 	delete [] free_filter_freqs;
-	delete [] fbfreq;
+//	delete [] fbfreq;
 };
 
 void ProcessedStretch::set_parameters(ProcessParameters *ppar){
@@ -153,6 +153,10 @@ void ProcessedStretch::copy(REALTYPE *freq1,REALTYPE *freq2){
 
 void ProcessedStretch::add(REALTYPE *freq2,REALTYPE *freq1,REALTYPE a){
 	for (int i=0;i<nfreq;i++) freq2[i]+=freq1[i]*a;
+};
+
+void ProcessedStretch::mul(REALTYPE *freq1,REALTYPE a){
+	for (int i=0;i<nfreq;i++) freq1[i]*=a;
 };
 
 void ProcessedStretch::zero(REALTYPE *freq1){
@@ -178,6 +182,10 @@ REALTYPE ProcessedStretch::get_stretch_multiplier(REALTYPE pos_percents){
 };
 
 void ProcessedStretch::process_spectrum(REALTYPE *freq){
+	//REALTYPE fb=0.8;
+	//add(freq,fbfreq,fb);
+	
+
 	if (pars.harmonics.enabled) {
 		copy(freq,infreq);
 		do_harmonics(infreq,freq);
@@ -223,6 +231,8 @@ void ProcessedStretch::process_spectrum(REALTYPE *freq){
 		do_compressor(infreq,freq);
 	};
 
+//	copy(freq,fbfreq);
+//	mul(freq,1.0-fb);
 };
 
 //void ProcessedStretch::process_output(REALTYPE *smps,int nsmps){

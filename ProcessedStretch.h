@@ -162,6 +162,7 @@ class ProcessedStretch:public Stretch{
 
 		void copy(REALTYPE *freq1,REALTYPE *freq2);
 		void add(REALTYPE *freq2,REALTYPE *freq1,REALTYPE a=1.0);
+		void mul(REALTYPE *freq1,REALTYPE a);
 		void zero(REALTYPE *freq1);
 		void spread(REALTYPE *freq1,REALTYPE *freq2,REALTYPE spread_bandwidth);
 
@@ -172,7 +173,7 @@ class ProcessedStretch:public Stretch{
 		ProcessParameters pars;
 
 		REALTYPE *infreq,*sumfreq,*tmpfreq1,*tmpfreq2;
-		REALTYPE *fbfreq;
+		//REALTYPE *fbfreq;
 };
 
 #endif
