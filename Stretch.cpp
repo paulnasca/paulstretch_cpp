@@ -141,38 +141,39 @@ void FFT::applywindow(FFTWindow type){
 /*******************************************/
 
 
-Stretch::Stretch(REALTYPE rap_,int in_bufsize_,FFTWindow w,bool bypass_,REALTYPE samplerate_,int stereo_mode_){
+Stretch::Stretch(REALTYPE rap_,int bufsize_,FFTWindow w,bool bypass_,REALTYPE samplerate_,int stereo_mode_){
+
 	samplerate=samplerate_;
 	rap=rap_;
-	in_bufsize=in_bufsize_;
+	bufsize=bufsize_;
 	bypass=bypass_;
 	stereo_mode=stereo_mode_;
-	if (rap>=1.0){//stretch
-		out_bufsize=in_bufsize;
-	}else{
-		//shorten
-		out_bufsize=(int)(in_bufsize*rap);
+	if (bufsize<8) bufsize=8;
+
+	out_buf=new REALTYPE[bufsize];
+	old_freq=new REALTYPE[bufsize];
+	old_smps=new REALTYPE[bufsize];
+	old_out_smps=new REALTYPE[bufsize*2];
+	for (int i=0;i<bufsize*2;i++) old_out_smps[i]=0.0;
+	for (int i=0;i<bufsize;i++) {
+		old_freq[i]=0.0;
+		old_smps[i]=0.0;
 	};
-	if (out_bufsize<8) out_bufsize=8;
 
-	if (bypass) out_bufsize=in_bufsize;
 
-	out_buf=new REALTYPE[out_bufsize];
-	old_out_smp_buf=new REALTYPE[out_bufsize*2];for (int i=0;i<out_bufsize*2;i++) old_out_smp_buf[i]=0.0;
-
-	poolsize=in_bufsize_*2;
-	in_pool=new REALTYPE[poolsize];for (int i=0;i<poolsize;i++) in_pool[i]=0.0;
-
-	infft=new FFT(poolsize);
-	outfft=new FFT(out_bufsize*2);
+	infft=new FFT(bufsize*2);
+	outfft=new FFT(bufsize*2);
 	remained_samples=0.0;
 	window_type=w;
+	require_new_buffer=false;
+	c_pos_percents=0.0;
 };
 
 Stretch::~Stretch(){
+	delete [] old_freq;
 	delete [] out_buf;
-	delete [] old_out_smp_buf;
-	delete [] in_pool;
+	delete [] old_smps;
+	delete [] old_out_smps;
 	delete infft;
 	delete outfft;
 };
@@ -180,123 +181,92 @@ Stretch::~Stretch(){
 void Stretch::set_rap(REALTYPE newrap){
 	if ((rap>=1.0)&&(newrap>=1.0)) rap=newrap;
 };
+		
+void Stretch::do_analyse_inbuf(REALTYPE *smps){
+	//get the frequencies
+	for (int i=0;i<bufsize;i++) {
+		infft->smp[i]=old_smps[i];
+		infft->smp[i+bufsize]=smps[i];
+
+		old_freq[i]=infft->freq[i];
+		old_smps[i]=smps[i];
+	};
+	infft->applywindow(window_type);
+	infft->smp2freq();
+};
 
 void Stretch::process(REALTYPE *smps,int nsmps){
 	if (bypass){
-		for (int i=0;i<out_bufsize;i++) out_buf[i]=smps[i];
+		for (int i=0;i<bufsize;i++) out_buf[i]=smps[i];
 		//post-process the output
-		//	process_output(out_buf,out_bufsize);
+		//	process_output(out_buf,bufsize);
 		return;
 	};
-	//add new samples to the pool
-	if ((smps!=NULL)&&(nsmps!=0)){
-		if (nsmps>poolsize){
-			printf("Warning nsmps> inbufsize on Stretch::process() %d>%d\n",nsmps,poolsize);
-			nsmps=poolsize;
+
+	if (smps!=NULL){
+		if ((nsmps!=0)&&(nsmps!=bufsize)&&(nsmps!=bufsize*2)){
+			printf("Warning wrong nsmps on Stretch::process() %d,%d\n",nsmps,bufsize);
+			return;
 		};
-		int nleft=poolsize-nsmps;
-
-		//move left the samples from the pool to make room for new samples
-		for (int i=0;i<nleft;i++) in_pool[i]=in_pool[i+nsmps];
-
-		//add new samples to the pool
-		for (int i=0;i<nsmps;i++) in_pool[i+nleft]=smps[i];	
-	};
-
-	//get the samples from the pool
-	for (int i=0;i<poolsize;i++) infft->smp[i]=in_pool[i];
-
-
-	infft->applywindow(window_type);
-	infft->smp2freq();
-
-
-	if (out_bufsize==in_bufsize){//output is the same as the input (as usual)
-		for (int i=0;i<in_bufsize;i++) outfft->freq[i]=infft->freq[i];
-	} else {
-		if (out_bufsize>in_bufsize){//output is longer
-			REALTYPE rap=(REALTYPE)in_bufsize/(REALTYPE)out_bufsize;
-			for (int i=0;i<out_bufsize;i++) {
-				REALTYPE pos=i*rap;
-				int poshi=(int)floor(pos);
-				REALTYPE poslo=pos-floor(pos);
-				outfft->freq[i]=infft->freq[poshi]*(1.0-poslo)+infft->freq[poshi+1]*poslo;
-			};
-		}else{//output is shorter
-			for (int i=0;i<out_bufsize;i++) outfft->freq[i]=0.0;
-			REALTYPE rap=(REALTYPE)out_bufsize/(REALTYPE)in_bufsize;
-			for (int i=0;i<in_bufsize;i++) {
-				REALTYPE pos=i*rap;
-				int poshi=(int)(floor(pos));
-				//		#warning sa folosesc si poslo
-				outfft->freq[poshi]+=infft->freq[i];
-			};
+		if (nsmps!=0){//new data arrived: update the frequency components
+			do_analyse_inbuf(smps);		
+			if (nsmps==bufsize*2) do_analyse_inbuf(smps+bufsize);
 		};
+		//compute the output spectrum
+		for (int i=0;i<bufsize;i++) {
+			outfft->freq[i]=infft->freq[i]*remained_samples+old_freq[i]*(1.0-remained_samples);
+		};
+		
+		process_spectrum(outfft->freq);
+
+		outfft->freq2smp();
+
+		//make the output buffer
+		REALTYPE tmp=1.0/(float) bufsize*M_PI;
+		REALTYPE hinv_sqrt2=0.853553390593;//(1.0+1.0/sqrt(2))*0.5;
+
+		REALTYPE ampfactor=2.0;
+		
+		//remove the resulted unwanted amplitude modulation (caused by the interference of N and N+1 windowed buffer and compute the output buffer
+		for (int i=0;i<bufsize;i++) {
+			REALTYPE a=(0.5+0.5*cos(i*tmp));
+			REALTYPE out=outfft->smp[i+bufsize]*(1.0-a)+old_out_smps[i]*a;
+			out_buf[i]=out*(hinv_sqrt2-(1.0-hinv_sqrt2)*cos(i*2.0*tmp))*ampfactor;
+		};
+
+		//copy the current output buffer to old buffer
+		for (int i=0;i<bufsize*2;i++) old_out_smps[i]=outfft->smp[i];
+
 	};
 
-	process_spectrum(outfft->freq);
+	long double used_rap=rap*get_stretch_multiplier(c_pos_percents);	
 
-	outfft->freq2smp();
+	long double r=1.0/used_rap;
 
-	//make the output buffer
-	REALTYPE tmp=1.0/(float) out_bufsize*M_PI;
-	REALTYPE hinv_sqrt2=0.853553390593;//(1.0+1.0/sqrt(2))*0.5;
-
-	REALTYPE ampfactor=1.0;
-	if (rap<1.0) ampfactor=rap*0.707;
-	else ampfactor=(out_bufsize/(float)poolsize)*4.0;
-
-	for (int i=0;i<out_bufsize;i++) {
-		REALTYPE a=(0.5+0.5*cos(i*tmp));
-		REALTYPE out=outfft->smp[i+out_bufsize]*(1.0-a)+old_out_smp_buf[i]*a;
-		out_buf[i]=out*(hinv_sqrt2-(1.0-hinv_sqrt2)*cos(i*2.0*tmp))*ampfactor;
+	long double old_remained_samples_test=remained_samples;
+	remained_samples+=r;
+	int result=0;
+	if (remained_samples>=1.0){
+		remained_samples=remained_samples-floor(remained_samples);
+		require_new_buffer=true;
+	}else{
+		require_new_buffer=false;
 	};
 
-	//copy the current output buffer to old buffer
-	for (int i=0;i<out_bufsize*2;i++) old_out_smp_buf[i]=outfft->smp[i];
-
-	//post-process the output
-	//process_output(out_buf,out_bufsize);
+//	long double rf_test=remained_samples-old_remained_samples_test;//this value should be almost like "rf" (for most of the time with the exception of changing the "ri" value) for extremely long stretches (otherwise the shown stretch value is not accurate)
+	//for stretch up to 10^18x "long double" must have at least 64 bits in the fraction part (true for gcc compiler on x86 and macosx)
+	
 };
 
 
 int Stretch::get_nsamples(REALTYPE current_pos_percents){
-	if (bypass) return out_bufsize;
-	if (rap<1.0) return poolsize/2;//pentru shorten
-
-
-	long double used_rap=rap*get_stretch_multiplier(current_pos_percents);	
-
-	long double r=out_bufsize/used_rap;
-	int ri=(int)floor(r);
-	long double rf=r-floor(r);
-
-	long double old_remained_samples_test=remained_samples;
-	remained_samples+=rf;
-	if (remained_samples>=1.0){
-		ri+=(int)floor(remained_samples);
-		remained_samples=remained_samples-floor(remained_samples);
-	};
-
-	long double rf_test=remained_samples-old_remained_samples_test;//this value should be almost like "rf" (for most of the time with the exception of changing the "ri" value) for extremely long stretches (otherwise the shown stretch value is not accurate)
-	//for stretch up to 10^18x "long double" must have at least 64 bits in the fraction part (true for gcc compiler on x86 and macosx)
-
-//	long double zzz=1.0;//quick test by adding a "largish" number and substracting it again
-//	rf_test+=zzz;
-//	rf_test-=zzz;
-
-//	printf("remained_samples=%.20Lg rf=%.20Lg  rf_test=%.20Lg\n",remained_samples,rf,rf_test);
-//	printf("rf=%g  rf_test=%g\n",(double)rf,(double)(rf_test));
-
-	if (ri>poolsize){
-		ri=poolsize;
-	};
-
-	return ri;
+	if (bypass) return bufsize;
+	c_pos_percents=current_pos_percents;
+	return require_new_buffer?bufsize:0;
 };
 
 int Stretch::get_nsamples_for_fill(){
-	return poolsize;
+	return bufsize*2;
 };
 
 REALTYPE Stretch::get_stretch_multiplier(REALTYPE pos_percents){

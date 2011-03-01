@@ -72,10 +72,11 @@ int AInputS::read(int nsmps,short int *smps){
     int readed=afReadFrames(handle,AF_DEFAULT_TRACK,smps,nsmps);
     info.currentsample+=readed;
     if (readed!=nsmps) {
+		if (readed>=0) for (int i=readed;i<nsmps;i++) smps[i]=0;
 		info.currentsample=info.nsamples;
 		eof=true;
     };
-    return readed;
+	return nsmps;
 };
 
 void AInputS::seek(double pos){

@@ -120,7 +120,7 @@ void ProcessParameters::getfromXML(XMLwrapper *xml){
 };
 
 ProcessedStretch::ProcessedStretch(REALTYPE rap_,int in_bufsize_,FFTWindow w,bool bypass_,REALTYPE samplerate_,int stereo_mode_):Stretch(rap_,in_bufsize_,w,bypass_,samplerate_,stereo_mode_){
-	nfreq=out_bufsize;
+	nfreq=bufsize;
 	infreq=new REALTYPE[nfreq];
 	sumfreq=new REALTYPE[nfreq];
 	tmpfreq1=new REALTYPE[nfreq];

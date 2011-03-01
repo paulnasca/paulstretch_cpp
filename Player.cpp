@@ -270,7 +270,7 @@ void Player::newtaskcheck(){
 			if (stretchr) stretchr->set_parameters(task.ppar);
 			if (binaural_beats) binaural_beats->pars=*(task.bbpar);
 
-			inbufsize=stretchl->poolsize;
+			inbufsize=stretchl->get_max_bufsize();
 			if (inbuf.l) delete []inbuf.l;inbuf.l=NULL;
 			if (inbuf.r) delete []inbuf.r;inbuf.r=NULL;
 			inbuf.l=new REALTYPE[inbufsize];
@@ -304,7 +304,7 @@ void Player::newtaskcheck(){
 			};
 			first_in_buf=true;
 
-			outbuf.size=stretchl->out_bufsize;
+			outbuf.size=stretchl->get_bufsize();
 
 			int min_samples=ai->info.samplerate*2;
 			int n=2*PA_SOUND_BUFFER_SIZE/outbuf.size;
@@ -407,7 +407,7 @@ void Player::computesamples(){
 		stretchr->window_type=window_type;
 		stretchl->process(inbuf.l,readsize);
 		stretchr->process(inbuf.r,readsize);
-		binaural_beats->process(stretchl->out_buf,stretchr->out_buf,stretchl->out_bufsize,in_pos_100);
+		binaural_beats->process(stretchl->out_buf,stretchr->out_buf,stretchl->get_bufsize(),in_pos_100);
 		//	stretchl->process_output(stretchl->out_buf,stretchl->out_bufsize);
 		//	stretchr->process_output(stretchr->out_buf,stretchr->out_bufsize);
 

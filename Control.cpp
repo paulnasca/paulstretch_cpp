@@ -476,10 +476,10 @@ string Control::Render(string inaudio,string outaudio,FILE_TYPE outtype,FILE_TYP
 	stretchl->set_parameters(&ppar);
 	stretchr->set_parameters(&ppar);
 
-	outbufsize=stretchl->out_bufsize;
+	outbufsize=stretchl->get_bufsize();
 	int *outbuf=new int[outbufsize*2];
 
-	int poolsize=stretchl->poolsize;
+	int poolsize=stretchl->get_max_bufsize();
 
 	inbuf.l=new REALTYPE[poolsize];
 	inbuf.r=new REALTYPE[poolsize];

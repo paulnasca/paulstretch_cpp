@@ -62,33 +62,45 @@ class Stretch{
 		//in_bufsize is also a half of a FFT buffer (in samples)
 		virtual ~Stretch();
 
+		int get_max_bufsize(){
+			return bufsize*2;
+		};
+		int get_bufsize(){
+			return bufsize;
+		};
+
 		void process(REALTYPE *smps,int nsmps);
 		//		virtual void process_output(REALTYPE *smps,int nsmps){};
 
-		int in_bufsize;
-		int poolsize;//how many samples are inside the input_pool size (need to know how many samples to fill when seeking)
 
-		int out_bufsize;
 		REALTYPE *out_buf;//pot sa pun o variabila "max_out_bufsize" si asta sa fie marimea lui out_buf si pe out_bufsize sa il folosesc ca marime adaptiva
 
-		int get_nsamples(REALTYPE current_pos_percents);//how many samples are required to be added in the pool next time
+		int get_nsamples(REALTYPE current_pos_percents);//how many samples are required 
 		int get_nsamples_for_fill();//how many samples are required to be added for a complete buffer refill (at start of the song or after seek)
 
 		void set_rap(REALTYPE newrap);//set the current stretch value
 
 		FFTWindow window_type;
 	protected:
+		int bufsize;
+
 		virtual void process_spectrum(REALTYPE *freq){};
 		virtual REALTYPE get_stretch_multiplier(REALTYPE pos_percents);
 		REALTYPE samplerate;
 		int stereo_mode;//0=mono,1=left,2=right
 	private:
-		REALTYPE *in_pool;//de marimea in_bufsize
+
+		void do_analyse_inbuf(REALTYPE *smps);
+
+//		REALTYPE *in_pool;//de marimea in_bufsize
 		REALTYPE rap;
-		REALTYPE *old_out_smp_buf;
+		REALTYPE *old_out_smps;
+		REALTYPE *old_freq,*old_smps;
 
 		FFT *infft,*outfft;
-		long double remained_samples;//how many fraction of samples has remained (0..1)
+		long double remained_samples;//0..1
+		REALTYPE c_pos_percents;
+		bool require_new_buffer;
 		bool bypass;
 };
 
