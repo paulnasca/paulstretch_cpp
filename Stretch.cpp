@@ -152,16 +152,25 @@ Stretch::Stretch(REALTYPE rap_,int bufsize_,FFTWindow w,bool bypass_,REALTYPE sa
 
 	out_buf=new REALTYPE[bufsize];
 	old_freq=new REALTYPE[bufsize];
+
+	very_old_smps=new REALTYPE[bufsize];
+	new_smps=new REALTYPE[bufsize];
 	old_smps=new REALTYPE[bufsize];
+
 	old_out_smps=new REALTYPE[bufsize*2];
-	for (int i=0;i<bufsize*2;i++) old_out_smps[i]=0.0;
+	for (int i=0;i<bufsize*2;i++) {
+		old_out_smps[i]=0.0;
+	};
 	for (int i=0;i<bufsize;i++) {
 		old_freq[i]=0.0;
+		new_smps[i]=0.0;
 		old_smps[i]=0.0;
+		very_old_smps[i]=0.0;
 	};
 
 
 	infft=new FFT(bufsize*2);
+	fft=new FFT(bufsize*2);
 	outfft=new FFT(bufsize*2);
 	remained_samples=0.0;
 	window_type=w;
@@ -172,8 +181,11 @@ Stretch::Stretch(REALTYPE rap_,int bufsize_,FFTWindow w,bool bypass_,REALTYPE sa
 Stretch::~Stretch(){
 	delete [] old_freq;
 	delete [] out_buf;
+	delete [] new_smps;
 	delete [] old_smps;
+	delete [] very_old_smps;
 	delete [] old_out_smps;
+	delete fft;
 	delete infft;
 	delete outfft;
 };
@@ -189,10 +201,17 @@ void Stretch::do_analyse_inbuf(REALTYPE *smps){
 		infft->smp[i+bufsize]=smps[i];
 
 		old_freq[i]=infft->freq[i];
-		old_smps[i]=smps[i];
 	};
 	infft->applywindow(window_type);
 	infft->smp2freq();
+};
+
+void Stretch::do_next_inbuf_smps(REALTYPE *smps){
+	for (int i=0;i<bufsize;i++) {
+		very_old_smps[i]=old_smps[i];
+		old_smps[i]=new_smps[i];
+		new_smps[i]=smps[i];
+	};
 };
 
 void Stretch::process(REALTYPE *smps,int nsmps){
@@ -212,11 +231,22 @@ void Stretch::process(REALTYPE *smps,int nsmps){
 			do_analyse_inbuf(smps);		
 			if (nsmps==bufsize*2) do_analyse_inbuf(smps+bufsize);
 		};
+
+
 		//compute the output spectrum
+#warning sa fac output spectrum ca la versiunea veche prin reanaliza a bufferului very_old_smps,old_smps,new_smps
 		for (int i=0;i<bufsize;i++) {
 			outfft->freq[i]=infft->freq[i]*remained_samples+old_freq[i]*(1.0-remained_samples);
 		};
-		
+
+
+		//move the buffers	
+		if (nsmps!=0){//new data arrived: update the frequency components
+			do_next_inbuf_smps(smps);		
+			if (nsmps==bufsize*2) {
+				do_next_inbuf_smps(smps+bufsize);
+			};
+		};
 		process_spectrum(outfft->freq);
 
 		outfft->freq2smp();

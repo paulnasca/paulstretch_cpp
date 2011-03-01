@@ -91,13 +91,16 @@ class Stretch{
 	private:
 
 		void do_analyse_inbuf(REALTYPE *smps);
+		void do_next_inbuf_smps(REALTYPE *smps);
 
 //		REALTYPE *in_pool;//de marimea in_bufsize
 		REALTYPE rap;
 		REALTYPE *old_out_smps;
-		REALTYPE *old_freq,*old_smps;
+		REALTYPE *old_freq;
+		REALTYPE *new_smps,*old_smps,*very_old_smps;
 
 		FFT *infft,*outfft;
+		FFT *fft;
 		long double remained_samples;//0..1
 		REALTYPE c_pos_percents;
 		bool require_new_buffer;
