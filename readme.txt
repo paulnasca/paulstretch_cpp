@@ -16,10 +16,6 @@ Requirements:
 
 This algorithm/program is suitable only for extreme stretching the audio. 
 
-There is lot room for improvements on this algorithm like:
-    - on sharp attacks to make the window smaller and larger on steady sounds. This avoid adding constant sidebands on steady sounds and smoothing too much the sharp sounds.
-    - even for small window, the sidebands produced can be lowered (how?)
-
 Tips:
 	You can change the default output device with "PA_RECOMMENDED_OUTPUT_DEVICE" environment variable (used by PortAudio).
 	eg: set PA_RECOMMENDED_OUTPUT_DEVICE=1  #where 1 represents the index of the device; you can try other values for other devices
@@ -75,6 +71,7 @@ History:
     2011????(2.)
           - Added an option to preserve the tonal part or noise part
 	  - Ignored the commandline parameters starting with "-" (usefull for macosx)
+          - Improved the algorithm
 
 Enjoy! :)
 Paul

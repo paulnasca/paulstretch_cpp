@@ -142,6 +142,13 @@ void FFT::applywindow(FFTWindow type){
 
 
 Stretch::Stretch(REALTYPE rap_,int bufsize_,FFTWindow w,bool bypass_,REALTYPE samplerate_,int stereo_mode_){
+	onset_detection_strength=0.0;
+
+	
+#warning test
+	onset_detection_strength=0.5;
+
+
 
 	samplerate=samplerate_;
 	rap=rap_;
@@ -214,6 +221,44 @@ void Stretch::do_next_inbuf_smps(REALTYPE *smps){
 	};
 };
 
+//static bool kuku=false;
+REALTYPE Stretch::do_detect_onset(){
+	//kuku=!kuku;
+	REALTYPE result=0.0;
+	if (onset_detection_strength>1e-3){
+		REALTYPE os=0.0,osinc=0.0;
+		REALTYPE osincold=1e-5;
+		int maxk=1+(int)(bufsize*500.0/(samplerate*0.5));
+		int k=0;
+		for (int i=0;i<bufsize;i++) {
+			osinc+=infft->freq[i]-old_freq[i];
+			osincold+=old_freq[i];
+			if (k>=maxk) {
+				k=0;
+				os+=osinc/osincold;
+				osinc=0;
+			};
+			k++;
+		};
+		os+=osinc;
+		if (os<0.0) os=0.0;
+		//if (os>1.0) os=1.0;
+
+		REALTYPE os_strength=pow(20.0,sqrt(1.0-onset_detection_strength))-1.0;
+		REALTYPE os_strength_h=os_strength*0.75;
+		if (os>os_strength_h){
+			result=(os-os_strength_h)/(os_strength-os_strength_h);
+			if (result>1.0) result=1.0;
+		};
+
+		//if (kuku) printf("%g\n",result);
+		//if (kuku) printf("(%g %g) %g  => %g\n",os_strength,os_strength_h,os,result);
+
+		if (result>1.0) result=1.0;
+	};
+	return result;
+};
+
 void Stretch::process(REALTYPE *smps,int nsmps){
 	if (bypass){
 		for (int i=0;i<bufsize;i++) out_buf[i]=smps[i];
@@ -228,6 +273,7 @@ void Stretch::process(REALTYPE *smps,int nsmps){
 		if (nsmps!=0){//new data arrived: update the frequency components
 			do_analyse_inbuf(smps);		
 			if (nsmps==bufsize*2) do_analyse_inbuf(smps+bufsize);
+			REALTYPE onset=do_detect_onset();
 		};
 
 

@@ -69,6 +69,10 @@ class Stretch{
 			return bufsize;
 		};
 
+		REALTYPE get_onset_detection_strength(){
+			return onset_detection_strength;
+		};
+
 		void process(REALTYPE *smps,int nsmps);
 		//		virtual void process_output(REALTYPE *smps,int nsmps){};
 
@@ -79,6 +83,8 @@ class Stretch{
 		int get_nsamples_for_fill();//how many samples are required to be added for a complete buffer refill (at start of the song or after seek)
 
 		void set_rap(REALTYPE newrap);//set the current stretch value
+
+		void set_onset_detection_strength(REALTYPE detection_strength);
 
 		FFTWindow window_type;
 	protected:
@@ -92,9 +98,10 @@ class Stretch{
 
 		void do_analyse_inbuf(REALTYPE *smps);
 		void do_next_inbuf_smps(REALTYPE *smps);
+		REALTYPE do_detect_onset();
 
 //		REALTYPE *in_pool;//de marimea in_bufsize
-		REALTYPE rap;
+		REALTYPE rap,onset_detection_strength;
 		REALTYPE *old_out_smps;
 		REALTYPE *old_freq;
 		REALTYPE *new_smps,*old_smps,*very_old_smps;
