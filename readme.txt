@@ -72,6 +72,7 @@ History:
           - Added an option to preserve the tonal part or noise part
 	  - Ignored the commandline parameters starting with "-" (usefull for macosx)
           - Improved the algorithm
+	  - Added onset detection
 
 Enjoy! :)
 Paul

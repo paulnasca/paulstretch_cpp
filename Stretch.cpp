@@ -177,6 +177,7 @@ Stretch::Stretch(REALTYPE rap_,int bufsize_,FFTWindow w,bool bypass_,REALTYPE sa
 	window_type=w;
 	require_new_buffer=false;
 	c_pos_percents=0.0;
+	extra_onset_time_credit=0.0;
 };
 
 Stretch::~Stretch(){
@@ -215,9 +216,7 @@ void Stretch::do_next_inbuf_smps(REALTYPE *smps){
 	};
 };
 
-//static bool kuku=false;
 REALTYPE Stretch::do_detect_onset(){
-	//kuku=!kuku;
 	REALTYPE result=0.0;
 	if (onset_detection_sensitivity>1e-3){
 		REALTYPE os=0.0,osinc=0.0;
@@ -238,15 +237,12 @@ REALTYPE Stretch::do_detect_onset(){
 		if (os<0.0) os=0.0;
 		//if (os>1.0) os=1.0;
 
-		REALTYPE os_strength=pow(20.0,sqrt(1.0-onset_detection_sensitivity))-1.0;
+		REALTYPE os_strength=pow(20.0,1.0-onset_detection_sensitivity)-1.0;
 		REALTYPE os_strength_h=os_strength*0.75;
 		if (os>os_strength_h){
 			result=(os-os_strength_h)/(os_strength-os_strength_h);
 			if (result>1.0) result=1.0;
 		};
-
-		//if (kuku) printf("%g\n",result);
-		//if (kuku) printf("(%g %g) %g  => %g\n",os_strength,os_strength_h,os,result);
 
 		if (result>1.0) result=1.0;
 	};
@@ -320,6 +316,12 @@ REALTYPE Stretch::process(REALTYPE *smps,int nsmps){
 	long double used_rap=rap*get_stretch_multiplier(c_pos_percents);	
 
 	long double r=1.0/used_rap;
+	if (extra_onset_time_credit>0){
+		REALTYPE credit_get=0.5*r;//must be smaller than r
+		extra_onset_time_credit-=credit_get;
+		if (extra_onset_time_credit<0.0) extra_onset_time_credit=0.0;
+		r-=credit_get;
+	};
 
 	long double old_remained_samples_test=remained_samples;
 	remained_samples+=r;
@@ -339,8 +341,8 @@ REALTYPE Stretch::process(REALTYPE *smps,int nsmps){
 void Stretch::here_is_onset(REALTYPE onset){
 	if (onset>0.5){
 		require_new_buffer=true;
+		extra_onset_time_credit+=1.0-remained_samples;
 		remained_samples=0.0;
-		//aici sa pun creditul
 	};
 };
 

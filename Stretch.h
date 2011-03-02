@@ -85,6 +85,7 @@ class Stretch{
 
 		void set_onset_detection_sensitivity(REALTYPE detection_sensitivity){
 			onset_detection_sensitivity=detection_sensitivity;
+			if (detection_sensitivity<1e-3) extra_onset_time_credit=0.0;
 		};
 		void here_is_onset(REALTYPE onset);
 
@@ -111,6 +112,7 @@ class Stretch{
 		FFT *infft,*outfft;
 		FFT *fft;
 		long double remained_samples;//0..1
+		long double extra_onset_time_credit;
 		REALTYPE c_pos_percents;
 		bool require_new_buffer;
 		bool bypass;

@@ -187,7 +187,7 @@ rendering=false;} {}
   Function {make_window()} {open private
   } {
     Fl_Window window {
-      label {Paul's Extreme Sound Stretch}
+      label {Paul's Extreme Sound Stretch} open
       xywh {192 131 995 550} type Double resizable
       code0 {if(strlen(VERSION)<2) {o->color(FL_BLUE); o->label("VERSION NOT SET!!!!!!!!!!!!");};} visible
     } {
@@ -267,7 +267,7 @@ render();}
         xywh {5 50 985 420} box BORDER_BOX
       } {
         Fl_Group {} {
-          label Parameters open
+          label Parameters open selected
           xywh {5 70 985 400}
         } {
           Fl_Slider stretch_slider {
@@ -387,7 +387,7 @@ stretch_slider->do_callback();}
             label {Onset sensitivity:}
             callback {refresh();
 control.update_player_stretch();}
-            xywh {135 213 140 17} type {Horz Knob} box FLAT_BOX align 4
+            xywh {135 213 140 15} type {Horz Knob} box FLAT_BOX align 4
           }
         }
         Fl_Group {} {
@@ -900,8 +900,7 @@ bbpar_stereo_mode->value(control.bbpar.stereo_mode);
 
 stretch_multiplier_control->refresh();
 arbitrary_filter_control->refresh();
-binaural_beats_control->refresh();} {selected
-    }
+binaural_beats_control->refresh();} {}
   }
   Function {tickrefresh()} {} {
     code {seek_slider->value(seek_slider->maximum()*control.get_seek_pos());
