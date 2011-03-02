@@ -69,12 +69,11 @@ class Stretch{
 			return bufsize;
 		};
 
-		REALTYPE get_onset_detection_strength(){
-			return onset_detection_strength;
+		REALTYPE get_onset_detection_sensitivity(){
+			return onset_detection_sensitivity;
 		};
 
-		void process(REALTYPE *smps,int nsmps);
-		//		virtual void process_output(REALTYPE *smps,int nsmps){};
+		REALTYPE process(REALTYPE *smps,int nsmps);//returns the onset value
 
 
 		REALTYPE *out_buf;//pot sa pun o variabila "max_out_bufsize" si asta sa fie marimea lui out_buf si pe out_bufsize sa il folosesc ca marime adaptiva
@@ -84,7 +83,10 @@ class Stretch{
 
 		void set_rap(REALTYPE newrap);//set the current stretch value
 
-		void set_onset_detection_strength(REALTYPE detection_strength);
+		void set_onset_detection_sensitivity(REALTYPE detection_sensitivity){
+			onset_detection_sensitivity=detection_sensitivity;
+		};
+		void here_is_onset(REALTYPE onset);
 
 		FFTWindow window_type;
 	protected:
@@ -101,7 +103,7 @@ class Stretch{
 		REALTYPE do_detect_onset();
 
 //		REALTYPE *in_pool;//de marimea in_bufsize
-		REALTYPE rap,onset_detection_strength;
+		REALTYPE rap,onset_detection_sensitivity;
 		REALTYPE *old_out_smps;
 		REALTYPE *old_freq;
 		REALTYPE *new_smps,*old_smps,*very_old_smps;

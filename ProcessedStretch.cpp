@@ -182,10 +182,6 @@ REALTYPE ProcessedStretch::get_stretch_multiplier(REALTYPE pos_percents){
 };
 
 void ProcessedStretch::process_spectrum(REALTYPE *freq){
-	//REALTYPE fb=0.8;
-	//add(freq,fbfreq,fb);
-	
-
 	if (pars.harmonics.enabled) {
 		copy(freq,infreq);
 		do_harmonics(infreq,freq);
@@ -231,8 +227,6 @@ void ProcessedStretch::process_spectrum(REALTYPE *freq){
 		do_compressor(infreq,freq);
 	};
 
-//	copy(freq,fbfreq);
-//	mul(freq,1.0-fb);
 };
 
 //void ProcessedStretch::process_output(REALTYPE *smps,int nsmps){

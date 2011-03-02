@@ -142,11 +142,11 @@ void FFT::applywindow(FFTWindow type){
 
 
 Stretch::Stretch(REALTYPE rap_,int bufsize_,FFTWindow w,bool bypass_,REALTYPE samplerate_,int stereo_mode_){
-	onset_detection_strength=0.0;
+	onset_detection_sensitivity=0.0;
 
 	
 #warning test
-	onset_detection_strength=0.5;
+	onset_detection_sensitivity=0.5;
 
 
 
@@ -225,7 +225,7 @@ void Stretch::do_next_inbuf_smps(REALTYPE *smps){
 REALTYPE Stretch::do_detect_onset(){
 	//kuku=!kuku;
 	REALTYPE result=0.0;
-	if (onset_detection_strength>1e-3){
+	if (onset_detection_sensitivity>1e-3){
 		REALTYPE os=0.0,osinc=0.0;
 		REALTYPE osincold=1e-5;
 		int maxk=1+(int)(bufsize*500.0/(samplerate*0.5));
@@ -244,7 +244,7 @@ REALTYPE Stretch::do_detect_onset(){
 		if (os<0.0) os=0.0;
 		//if (os>1.0) os=1.0;
 
-		REALTYPE os_strength=pow(20.0,sqrt(1.0-onset_detection_strength))-1.0;
+		REALTYPE os_strength=pow(20.0,sqrt(1.0-onset_detection_sensitivity))-1.0;
 		REALTYPE os_strength_h=os_strength*0.75;
 		if (os>os_strength_h){
 			result=(os-os_strength_h)/(os_strength-os_strength_h);
@@ -259,21 +259,22 @@ REALTYPE Stretch::do_detect_onset(){
 	return result;
 };
 
-void Stretch::process(REALTYPE *smps,int nsmps){
+REALTYPE Stretch::process(REALTYPE *smps,int nsmps){
+	REALTYPE onset=0.0;
 	if (bypass){
 		for (int i=0;i<bufsize;i++) out_buf[i]=smps[i];
-		return;
+		return 0.0;
 	};
 
 	if (smps!=NULL){
 		if ((nsmps!=0)&&(nsmps!=bufsize)&&(nsmps!=bufsize*2)){
 			printf("Warning wrong nsmps on Stretch::process() %d,%d\n",nsmps,bufsize);
-			return;
+			return 0.0;
 		};
 		if (nsmps!=0){//new data arrived: update the frequency components
 			do_analyse_inbuf(smps);		
 			if (nsmps==bufsize*2) do_analyse_inbuf(smps+bufsize);
-			REALTYPE onset=do_detect_onset();
+			if (onset_detection_sensitivity>1e-3) onset=do_detect_onset();
 		};
 
 
@@ -338,9 +339,16 @@ void Stretch::process(REALTYPE *smps,int nsmps){
 
 //	long double rf_test=remained_samples-old_remained_samples_test;//this value should be almost like "rf" (for most of the time with the exception of changing the "ri" value) for extremely long stretches (otherwise the shown stretch value is not accurate)
 	//for stretch up to 10^18x "long double" must have at least 64 bits in the fraction part (true for gcc compiler on x86 and macosx)
-	
+	return onset;	
 };
 
+void Stretch::here_is_onset(REALTYPE onset){
+	if (onset>0.5){
+		require_new_buffer=true;
+		remained_samples=0.0;
+		//aici sa pun creditul
+	};
+};
 
 int Stretch::get_nsamples(REALTYPE current_pos_percents){
 	if (bypass) return bufsize;

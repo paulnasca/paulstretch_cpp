@@ -503,8 +503,11 @@ string Control::Render(string inaudio,string outaudio,FILE_TYPE outtype,FILE_TYP
 			inbuf.l[i]=inbuf_i[i*2]/32768.0;
 			inbuf.r[i]=inbuf_i[i*2+1]/32768.0;
 		};
-		stretchl->process(inbuf.l,readed);
-		stretchr->process(inbuf.r,readed);
+		REALTYPE onset_l=stretchl->process(inbuf.l,readed);
+		REALTYPE onset_r=stretchr->process(inbuf.r,readed);
+		REALTYPE onset=(onset_l>onset_r)?onset_l:onset_r;
+		stretchl->here_is_onset(onset);
+		stretchr->here_is_onset(onset);
 		bb.process(stretchl->out_buf,stretchr->out_buf,outbufsize,in_pos*100.0);
 		for (int i=0;i<outbufsize;i++) {
 			stretchl->out_buf[i]*=volume;

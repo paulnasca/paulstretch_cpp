@@ -405,8 +405,11 @@ void Player::computesamples(){
 		first_in_buf=false;
 		stretchl->window_type=window_type;
 		stretchr->window_type=window_type;
-		stretchl->process(inbuf.l,readsize);
-		stretchr->process(inbuf.r,readsize);
+		REALTYPE onset_l=stretchl->process(inbuf.l,readsize);
+		REALTYPE onset_r=stretchr->process(inbuf.r,readsize);
+		REALTYPE onset=(onset_l>onset_r)?onset_l:onset_r;
+		stretchl->here_is_onset(onset);
+		stretchr->here_is_onset(onset);
 		binaural_beats->process(stretchl->out_buf,stretchr->out_buf,stretchl->get_bufsize(),in_pos_100);
 		//	stretchl->process_output(stretchl->out_buf,stretchl->out_bufsize);
 		//	stretchr->process_output(stretchr->out_buf,stretchr->out_bufsize);
