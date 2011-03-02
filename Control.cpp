@@ -34,8 +34,7 @@ Control::Control(){
 
 	process.bufsize=16384;
 	process.stretch=4.0;
-///	process.transient.enable=false;
-///	process.transient.amount=0.5;
+	process.onset_detection_sensitivity=0.0;
 
 	seek_pos=0.0;
 	window_type=W_HANN;
@@ -57,83 +56,6 @@ Control::~Control(){
 	//    delete player; face crash daca il las
 };
 	
-///void Control::pre_analyse_whole_audio(InputS *ai){
-///	int inbufsize=1024;
-///	int readsize=inbufsize/2;
-///
-///	short int *inbuf_i=new short int[readsize*2];
-///	
-/////	REALTYPE *inbuf_f=new REALTYPE[readsize];
-/////	for (int i=0;i<readsize;i++) inbuf_f[i]=0.0;
-///
-///	REALTYPE *processbuf=new REALTYPE[inbufsize];
-///	for (int i=0;i<inbufsize;i++) processbuf[i]=0.0;
-///
-///	FFT *infft=new FFT(inbufsize);
-///
-///	int k=0;
-///	int fftsize=inbufsize/2;
-///	REALTYPE *oldfreq=new REALTYPE[fftsize];
-///	for (int i=0;i<fftsize;i++) oldfreq[i]=0.0;
-///	REALTYPE oldsumstart=0.0;
-///	int transient_data_n=0;
-///	int transient_data_max_n=10000;
-///	REALTYPE *transient_data=new REALTYPE [transient_data_max_n];
-///	while(!ai->eof){
-///		float in_pos=(REALTYPE) ai->info.currentsample/(REALTYPE)ai->info.nsamples;
-///
-///		int readed=ai->read(readsize,inbuf_i);
-///		if (readed!=readsize) break;//do not process the last buffer from the audiofile
-///		const float inv_32768=1.0/32768.0;
-///		
-///		for (int i=0;i<inbufsize-readed;i++){ 
-///			processbuf[i]=processbuf[i+readed];
-///		};
-///		for (int i=0;i<readed;i++) {
-///			processbuf[i+inbufsize-readed]=(inbuf_i[i*2]*inv_32768+inbuf_i[i*2+1]*inv_32768);
-///		};
-///		
-///		
-///		for (int i=0;i<inbufsize;i++) infft->smp[i]=processbuf[i];
-///
-///
-///		infft->applywindow(W_HAMMING);
-///		infft->smp2freq();
-///		infft->freq[0]=0;
-///		REALTYPE *freq=infft->freq;
-///
-///		REALTYPE sumstart=0.0;
-///		for (int i=0;i<fftsize;i++){
-///			REALTYPE x=freq[i]-oldfreq[i];
-///			if (x>0) sumstart+=x;
-///		};
-///		sumstart/=fftsize;
-///		const REALTYPE a=0.1;
-///		oldsumstart=oldsumstart*(1.0-a)+sumstart*a;
-///		sumstart-=1.5*oldsumstart;
-///		if (sumstart<0.0) sumstart=0.0;
-///
-///		transient_data[transient_data_n]=sumstart;
-///		transient_data_n++;
-///		if (transient_data_n>=transient_data_max_n){
-///			transient_data_max_n+=100000;
-///			REALTYPE *new_transient_data=new REALTYPE[transient_data_max_n];
-///			for (int i=0;i<transient_data_n;i++) new_transient_data[i]=transient_data[i];
-///			delete [] transient_data;
-///			transient_data=new_transient_data;
-///		};
-///  
-///  	for (int i=0;i<fftsize;i++) oldfreq[i]=freq[i];
-///  };
-///	ppar.set_transient_data(transient_data_n,transient_data);
-///	delete infft;
-///	delete []transient_data;
-///
-///	delete []oldfreq;
-///	delete [] inbuf_i;
-///	//delete [] inbuf_f;
-///	delete [] processbuf;
-///};
 
 bool Control::set_input_filename(string filename,FILE_TYPE intype){
 	InputS *ai=NULL;
@@ -336,7 +258,7 @@ REALTYPE Control::get_seek_pos(){
 };
 
 
-void Control::set_stretch_controls(double stretch_s,int mode,double fftsize_s){
+void Control::set_stretch_controls(double stretch_s,int mode,double fftsize_s,double onset_detection_sensitivity){
 	gui_sliders.stretch_s=stretch_s;
 	gui_sliders.mode_s=mode;
 	gui_sliders.fftsize_s=fftsize_s;
@@ -367,6 +289,7 @@ void Control::set_stretch_controls(double stretch_s,int mode,double fftsize_s){
 
 	process.stretch=stretch;
 	process.bufsize=bufsize;
+	process.onset_detection_sensitivity=onset_detection_sensitivity;
 
 };
 
@@ -394,6 +317,7 @@ double Control::get_stretch_control(double stretch,int mode){
 
 void Control::update_player_stretch(){
 	player->setrap(process.stretch);
+	player->set_onset_detection_sensitivity(process.onset_detection_sensitivity);
 };
 
 
@@ -473,6 +397,8 @@ string Control::Render(string inaudio,string outaudio,FILE_TYPE outtype,FILE_TYP
 	}inbuf;
 	ProcessedStretch *stretchl=new ProcessedStretch(process.stretch,inbufsize,window_type,false,ai->info.samplerate,1);
 	ProcessedStretch *stretchr=new ProcessedStretch(process.stretch,inbufsize,window_type,false,ai->info.samplerate,2);
+	stretchl->set_onset_detection_sensitivity(process.onset_detection_sensitivity);
+	stretchr->set_onset_detection_sensitivity(process.onset_detection_sensitivity);
 	stretchl->set_parameters(&ppar);
 	stretchr->set_parameters(&ppar);
 
@@ -583,6 +509,7 @@ bool Control::save_parameters(const char *filename){
 				
 				xml->addpar("window_type",window_type);
 				xml->addparreal("volume",volume);
+				xml->addparreal("onset_detection_sensitivity",process.onset_detection_sensitivity);
 
 			xml->endbranch();
 			
@@ -624,6 +551,7 @@ bool Control::load_parameters(const char *filename){
 			gui_sliders.stretch_s=xml->getparreal("stretch_s",gui_sliders.stretch_s);
 			gui_sliders.mode_s=xml->getpar("mode_s",gui_sliders.mode_s,0,2);
 			window_type=(FFTWindow)xml->getpar("window_type",window_type,0,4);
+			process.onset_detection_sensitivity=xml->getparreal("onset_detection_sensitivity",0.0);
 			volume=xml->getparreal("volume",1.0);
 			xml->exitbranch();
 		};
@@ -642,7 +570,7 @@ bool Control::load_parameters(const char *filename){
 	};
 	delete xml;
 
-	set_stretch_controls(gui_sliders.stretch_s,gui_sliders.mode_s,gui_sliders.fftsize_s);
+	set_stretch_controls(gui_sliders.stretch_s,gui_sliders.mode_s,gui_sliders.fftsize_s,process.onset_detection_sensitivity);
 	
 	set_window_type(window_type);
 	set_volume(volume);

@@ -55,35 +55,15 @@ struct ProcessParameters{
 		spread.enabled=false;
 		spread.bandwidth=0.3;
 		
-///		waveinfo.n_transients=1;
-///		waveinfo.transients_data=new REALTYPE[1];
-///		waveinfo.transients_data[0]=0;
-
 		tonal_vs_noise.enabled=false;
 		tonal_vs_noise.preserve=0.5;
 		tonal_vs_noise.bandwidth=0.9;
 	};
 	~ProcessParameters(){
-///		delete []waveinfo.transients_data;
 	};
 	void add2XML(XMLwrapper *xml);
 	void getfromXML(XMLwrapper *xml);
 	
-///	void set_transient_data(int n,REALTYPE *tr){
-///		delete []waveinfo.transients_data;
-///		waveinfo.n_transients=n;
-///		waveinfo.transients_data=new REALTYPE[n];
-///		for (int i=0;i<n;i++) waveinfo.transients_data[i]=tr[i];
-///	};
-///	
-///	REALTYPE get_transient(REALTYPE pos_percents){
-///		REALTYPE pos=pos_percents*0.01;
-///		if ((pos<0.0)||(pos>1.0)) return 0.0;
-///		REALTYPE fpos=pos*waveinfo.n_transients;
-///		int ipos=(int)fpos;
-///		return waveinfo.transients_data[ipos];
-///	};
-
 	struct{
 		bool enabled;
 		int cents;
@@ -133,11 +113,6 @@ struct ProcessParameters{
 	FreeEdit free_filter;
 	FreeEdit stretch_multiplier;
 
-	//the folowing parameter represents the information regarding the audio (it is not saved)
-///	struct{
-///		int n_transients;
-///		REALTYPE *transients_data;
-///	}waveinfo;
 };
 
 class ProcessedStretch:public Stretch{

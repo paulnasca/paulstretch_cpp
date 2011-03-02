@@ -69,6 +69,7 @@ Player::Player():Thread(){
 	info.samplerate=44100;
 	info.eof=true;
 	volume=1.0;
+	onset_detection_sensitivity=0.0;
 };
 
 Player::~Player(){
@@ -153,6 +154,9 @@ void Player::set_window_type(FFTWindow window){
 void Player::set_volume(REALTYPE vol){
 	volume=vol;
 };
+void Player::set_onset_detection_sensitivity(REALTYPE onset){
+	onset_detection_sensitivity=onset;
+};
 
 void Player::getaudiobuffer(int nsamples, float *out){
 	if (mode==MODE_PREPARING){
@@ -205,12 +209,10 @@ void Player::getaudiobuffer(int nsamples, float *out){
 
 		};
 	};
-	//     printf("-------------- %d\n",outbuf.nfresh);
 	outbuf.outk=k;
 	outbuf.outpos=pos;
 	bufmutex.unlock();
 
-	//    printf("max=%g\n",max);
 
 };
 
@@ -405,6 +407,9 @@ void Player::computesamples(){
 		first_in_buf=false;
 		stretchl->window_type=window_type;
 		stretchr->window_type=window_type;
+		REALTYPE s_onset=onset_detection_sensitivity;
+		stretchl->set_onset_detection_sensitivity(s_onset);
+		stretchr->set_onset_detection_sensitivity(s_onset);
 		REALTYPE onset_l=stretchl->process(inbuf.l,readsize);
 		REALTYPE onset_r=stretchr->process(inbuf.r,readsize);
 		REALTYPE onset=(onset_l>onset_r)?onset_l:onset_r;

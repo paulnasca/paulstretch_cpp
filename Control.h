@@ -66,13 +66,16 @@ class Control{
 		double get_stretch(){
 			return process.stretch;
 		};
+		double get_onset_detection_sensitivity(){
+			return process.onset_detection_sensitivity;
+		};
 		
 
 		bool is_freeze(){
 			return player->is_freeze();
 		};
 
-		void set_stretch_controls(double stretch_s,int mode,double fftsize_s);//*_s sunt de la 0.0 la 1.0
+		void set_stretch_controls(double stretch_s,int mode,double fftsize_s,double onset_detection_sensitivity);//*_s sunt de la 0.0 la 1.0
 		double get_stretch_control(double stretch,int mode);
 		void update_player_stretch();
 
@@ -106,10 +109,7 @@ class Control{
 		struct {
 			int bufsize;
 			double stretch;
-			///		struct{
-			///			bool enable;
-			///			double amount;
-			///		} transient;
+			double onset_detection_sensitivity;
 		}process;
 
 		struct {

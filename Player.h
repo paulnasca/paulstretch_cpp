@@ -67,6 +67,7 @@ class Player:public Thread{
 	void set_window_type(FFTWindow window);
 	
 	void set_volume(REALTYPE vol);
+	void set_onset_detection_sensitivity(REALTYPE onset);
 	
 	void set_process_parameters(ProcessParameters *ppar,BinauralBeatsParameters *bbpar);
 	
@@ -86,7 +87,7 @@ class Player:public Thread{
 	ModeType mode;
 	
 	enum TaskMode{
-	    TASK_NONE, TASK_START, TASK_STOP,TASK_SEEK,TASK_RAP,TASK_PARAMETERS
+	    TASK_NONE, TASK_START, TASK_STOP,TASK_SEEK,TASK_RAP,TASK_PARAMETERS, TASK_ONSET
 	};
 	struct {
 	    TaskMode mode;
@@ -120,7 +121,7 @@ class Player:public Thread{
 	void newtaskcheck();
 	void computesamples();
 	bool freeze_mode,bypass_mode,paused;
-	REALTYPE volume;
+	REALTYPE volume,onset_detection_sensitivity;
 
 	std::string current_filename;
 	FFTWindow window_type;

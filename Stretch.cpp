@@ -144,12 +144,6 @@ void FFT::applywindow(FFTWindow type){
 Stretch::Stretch(REALTYPE rap_,int bufsize_,FFTWindow w,bool bypass_,REALTYPE samplerate_,int stereo_mode_){
 	onset_detection_sensitivity=0.0;
 
-	
-#warning test
-	onset_detection_sensitivity=0.5;
-
-
-
 	samplerate=samplerate_;
 	rap=rap_;
 	bufsize=bufsize_;

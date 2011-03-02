@@ -187,7 +187,7 @@ rendering=false;} {}
   Function {make_window()} {open private
   } {
     Fl_Window window {
-      label {Paul's Extreme Sound Stretch} open
+      label {Paul's Extreme Sound Stretch}
       xywh {192 131 995 550} type Double resizable
       code0 {if(strlen(VERSION)<2) {o->color(FL_BLUE); o->label("VERSION NOT SET!!!!!!!!!!!!");};} visible
     } {
@@ -382,6 +382,12 @@ stretch_slider->do_callback();}
               code0 {o->init(stretch_free_edit,FE_LINEAR,0,100.0,FE_LOG,0.1,50.0,1.0);}
               class FreeEditControls
             } {}
+          }
+          Fl_Slider onset_slider {
+            label {Onset sensitivity:}
+            callback {refresh();
+control.update_player_stretch();}
+            xywh {135 213 140 17} type {Horz Knob} box FLAT_BOX align 4
           }
         }
         Fl_Group {} {
@@ -820,7 +826,8 @@ window->redraw();} {}
 int mode=mode_choice->value();
 double resolution_s=fftsize_slider->value()/fftsize_slider->maximum();
 
-control.set_stretch_controls(stretch_s,mode,resolution_s);
+double onset=onset_slider->value();
+control.set_stretch_controls(stretch_s,mode,resolution_s,onset);
 
 stretch_slider->copy_label(control.get_stretch_info().c_str());
 fftsize_slider->copy_label(control.get_fftsize_info().c_str());
@@ -847,7 +854,7 @@ if (!rendering){//do not change the status of render button while rendering
 fftsize_slider->value(control.gui_sliders.fftsize_s);
 mode_choice->value(control.gui_sliders.mode_s);
 window_choice->value(control.window_type);
-
+onset_slider->value(control.get_onset_detection_sensitivity());
 
 
 pitch_shift_enabled->value(control.ppar.pitch_shift.enabled);
@@ -893,7 +900,8 @@ bbpar_stereo_mode->value(control.bbpar.stereo_mode);
 
 stretch_multiplier_control->refresh();
 arbitrary_filter_control->refresh();
-binaural_beats_control->refresh();} {}
+binaural_beats_control->refresh();} {selected
+    }
   }
   Function {tickrefresh()} {} {
     code {seek_slider->value(seek_slider->maximum()*control.get_seek_pos());
@@ -961,6 +969,5 @@ Fl::run();
 
 delete gui;
 
-return 0;} {selected
-  }
+return 0;} {}
 } 
