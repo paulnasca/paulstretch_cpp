@@ -217,8 +217,6 @@ void Stretch::do_next_inbuf_smps(REALTYPE *smps){
 void Stretch::process(REALTYPE *smps,int nsmps){
 	if (bypass){
 		for (int i=0;i<bufsize;i++) out_buf[i]=smps[i];
-		//post-process the output
-		//	process_output(out_buf,bufsize);
 		return;
 	};
 
@@ -233,13 +231,7 @@ void Stretch::process(REALTYPE *smps,int nsmps){
 		};
 
 
-		//compute the output spectrum
-#warning sa fac output spectrum ca la versiunea veche prin reanaliza a bufferului very_old_smps,old_smps,new_smps
-		for (int i=0;i<bufsize;i++) {
-			outfft->freq[i]=infft->freq[i]*remained_samples+old_freq[i]*(1.0-remained_samples);
-		};
-
-
+//#warning sa fac output spectrum ca la versiunea veche prin reanaliza a bufferului very_old_smps,old_smps,new_smps
 		//move the buffers	
 		if (nsmps!=0){//new data arrived: update the frequency components
 			do_next_inbuf_smps(smps);		
@@ -247,6 +239,21 @@ void Stretch::process(REALTYPE *smps,int nsmps){
 				do_next_inbuf_smps(smps+bufsize);
 			};
 		};
+	
+		//construct the input fft
+		int start_pos=(int)(floor(remained_samples*bufsize));	
+		if (start_pos>=bufsize) start_pos=bufsize-1;
+		for (int i=0;i<bufsize-start_pos;i++) fft->smp[i]=very_old_smps[i+start_pos];
+		for (int i=0;i<bufsize;i++) fft->smp[i+bufsize-start_pos]=old_smps[i];
+		for (int i=0;i<start_pos;i++) fft->smp[i+2*bufsize-start_pos]=new_smps[i];
+		//compute the output spectrum
+		fft->applywindow(window_type);
+		fft->smp2freq();
+		for (int i=0;i<bufsize;i++) outfft->freq[i]=fft->freq[i];
+		
+	//	for (int i=0;i<bufsize;i++) outfft->freq[i]=infft->freq[i]*remained_samples+old_freq[i]*(1.0-remained_samples);
+
+
 		process_spectrum(outfft->freq);
 
 		outfft->freq2smp();
