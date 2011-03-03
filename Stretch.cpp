@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2006-2009 Nasca Octavian Paul
+    Copyright (C) 2006-2011 Nasca Octavian Paul
 	Author: Nasca Octavian Paul
 	
 	This program is free software; you can redistribute it and/or modify
@@ -178,6 +178,7 @@ Stretch::Stretch(REALTYPE rap_,int bufsize_,FFTWindow w,bool bypass_,REALTYPE sa
 	require_new_buffer=false;
 	c_pos_percents=0.0;
 	extra_onset_time_credit=0.0;
+	skip_samples=0;
 };
 
 Stretch::~Stretch(){
@@ -193,7 +194,8 @@ Stretch::~Stretch(){
 };
 
 void Stretch::set_rap(REALTYPE newrap){
-	if ((rap>=1.0)&&(newrap>=1.0)) rap=newrap;
+	//if ((rap>=1.0)&&(newrap>=1.0)) 
+	rap=newrap;
 };
 		
 void Stretch::do_analyse_inbuf(REALTYPE *smps){
@@ -327,6 +329,7 @@ REALTYPE Stretch::process(REALTYPE *smps,int nsmps){
 	remained_samples+=r;
 	int result=0;
 	if (remained_samples>=1.0){
+		skip_samples=(int)(floor(remained_samples-1.0)*bufsize);
 		remained_samples=remained_samples-floor(remained_samples);
 		require_new_buffer=true;
 	}else{
@@ -343,6 +346,7 @@ void Stretch::here_is_onset(REALTYPE onset){
 		require_new_buffer=true;
 		extra_onset_time_credit+=1.0-remained_samples;
 		remained_samples=0.0;
+		skip_samples=0;
 	};
 };
 
@@ -354,6 +358,10 @@ int Stretch::get_nsamples(REALTYPE current_pos_percents){
 
 int Stretch::get_nsamples_for_fill(){
 	return bufsize*2;
+};
+
+int Stretch::get_skip_nsamples(){
+	return skip_samples;
 };
 
 REALTYPE Stretch::get_stretch_multiplier(REALTYPE pos_percents){

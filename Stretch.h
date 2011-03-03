@@ -80,6 +80,7 @@ class Stretch{
 
 		int get_nsamples(REALTYPE current_pos_percents);//how many samples are required 
 		int get_nsamples_for_fill();//how many samples are required to be added for a complete buffer refill (at start of the song or after seek)
+		int get_skip_nsamples();//used for shorten
 
 		void set_rap(REALTYPE newrap);//set the current stretch value
 
@@ -114,6 +115,7 @@ class Stretch{
 		long double remained_samples;//0..1
 		long double extra_onset_time_credit;
 		REALTYPE c_pos_percents;
+		int skip_samples;
 		bool require_new_buffer;
 		bool bypass;
 };

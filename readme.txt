@@ -68,11 +68,11 @@ History:
     20110211(2.1-0)
           - Increased the precision of a paremeter for extreme long stretches
     
-    2011????(2.)
+    20110303(2.2)
+          - Improved the stretching algorithm, adding the onset detection
+          - Shorten algorithm improvements 
           - Added an option to preserve the tonal part or noise part
 	  - Ignored the commandline parameters starting with "-" (usefull for macosx)
-          - Improved the algorithm
-	  - Added onset detection
 
 Enjoy! :)
 Paul

@@ -312,8 +312,6 @@ void Player::newtaskcheck(){
 			int n=2*PA_SOUND_BUFFER_SIZE/outbuf.size;
 			if (n<3) n=3;//min 3 buffers
 			if (n<(min_samples/outbuf.size)) n=(min_samples/outbuf.size);//the internal buffers sums "min_samples" amount
-			//	     printf("PA_BUFSIZE=%d out_bufsize=%d   => %d\n",PA_SOUND_BUFFER_SIZE,outbuf.size,n);
-
 			outbuf.n=n;
 			outbuf.nfresh=0;
 			outbuf.datal=new float *[outbuf.n];
@@ -418,6 +416,9 @@ void Player::computesamples(){
 		binaural_beats->process(stretchl->out_buf,stretchr->out_buf,stretchl->get_bufsize(),in_pos_100);
 		//	stretchl->process_output(stretchl->out_buf,stretchl->out_bufsize);
 		//	stretchr->process_output(stretchr->out_buf,stretchr->out_bufsize);
+		int nskip=stretchl->get_skip_nsamples();
+		if (nskip>0) ai->skip(nskip);
+
 
 		bufmutex.lock();
 

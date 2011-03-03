@@ -274,16 +274,13 @@ void Control::set_stretch_controls(double stretch_s,int mode,double fftsize_s,do
 			stretch=pow(10.0,stretch_s*18.0);
 			break;
 		case 2:
-			stretch=1.0/pow(10.0,stretch_s*3.0);
-			if (stretch<0.1) stretch=0.1;
+			stretch=1.0/pow(10.0,stretch_s*2.0);
 			break;
 	};
 
 
 	fftsize_s=pow(fftsize_s,1.5);
-	double tmp=1.0;
-	if (mode==2) tmp=1.0/stretch;
-	int bufsize=(int)(pow(2.0,fftsize_s*12.0)*512.0*tmp);
+	int bufsize=(int)(pow(2.0,fftsize_s*12.0)*512.0);
 
 	bufsize=optimizebufsize(bufsize);
 
@@ -308,7 +305,7 @@ double Control::get_stretch_control(double stretch,int mode){
 			break;
 		case 2:
 			if (stretch>1.0) return -1;
-			result=3.0/(log(stretch)/log(10));
+			result=2.0/(log(stretch)/log(10));
 			break;
 	};
 	return result;
@@ -425,6 +422,7 @@ string Control::Render(string inaudio,string outaudio,FILE_TYPE outtype,FILE_TYP
 		};
 		int readed=0;
 		if (readsize!=0) readed=ai->read(readsize,inbuf_i);
+		
 		for (int i=0;i<readed;i++) {
 			inbuf.l[i]=inbuf_i[i*2]/32768.0;
 			inbuf.r[i]=inbuf_i[i*2+1]/32768.0;
@@ -439,6 +437,9 @@ string Control::Render(string inaudio,string outaudio,FILE_TYPE outtype,FILE_TYP
 			stretchl->out_buf[i]*=volume;
 			stretchr->out_buf[i]*=volume;
 		};
+		int nskip=stretchl->get_skip_nsamples();
+		if (nskip>0) ai->skip(nskip);
+
 		if (outtype==FILE_WAV){	
 			for (int i=0;i<outbufsize;i++) {
 				REALTYPE l=stretchl->out_buf[i],r=stretchr->out_buf[i];

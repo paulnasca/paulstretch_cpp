@@ -267,7 +267,7 @@ render();}
         xywh {5 50 985 420} box BORDER_BOX
       } {
         Fl_Group {} {
-          label Parameters open selected
+          label Parameters open
           xywh {5 70 985 400}
         } {
           Fl_Slider stretch_slider {
@@ -284,7 +284,8 @@ o->labelcolor(FL_BLUE);}
           }
           Fl_Choice mode_choice {
             label {Mode:}
-            callback {refresh();}
+            callback {refresh();
+control.update_player_stretch();} selected
             xywh {850 110 135 20} down_box BORDER_BOX
           } {
             MenuItem {} {
@@ -715,7 +716,7 @@ selection_pos2->value(100.0);}
         tooltip {drag audio file here to open it} xywh {5 24 1005 22} box FLAT_BOX color 17 align 84
         class DDBox
       }
-      Fl_Group {} {
+      Fl_Group {} {open
         xywh {5 475 985 70} box BORDER_BOX
       } {
         Fl_Group {} {open
@@ -735,7 +736,7 @@ bool bypass=false;
 if (Fl::event_button()==FL_RIGHT_MOUSE) bypass=true;
 
 control.startplay(bypass);}
-            tooltip Play xywh {20 500 40 20} box PLASTIC_UP_BOX
+            tooltip {Play - right click to play the original sound} xywh {20 500 40 20} box PLASTIC_UP_BOX
           }
           Fl_Button freeze_button {
             label {@<-> F}
@@ -791,23 +792,23 @@ control.stopplay();}
       }
     }
   }
-  Function {set_mode(Mode mode)} {private
+  Function {set_mode(Mode mode)} {open private
   } {
     code {switch (mode){
 	case STOP:
 		play_button->labelcolor(FL_BLACK);
-		mode_choice->activate();
+		//mode_choice->activate();
 		freeze_button->deactivate();
 	break;
 
 	case PAUSE:
 		play_button->labelcolor(FL_BLACK);
-		mode_choice->activate();
+		//mode_choice->activate();
 	break;
 	
 	case PLAY:
 		play_button->labelcolor(FL_RED);
-		mode_choice->deactivate();
+		//mode_choice->deactivate();
 		fftsize_slider->labelcolor(FL_BLACK);
 		freeze_button->activate();
 	break;
