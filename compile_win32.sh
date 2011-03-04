@@ -1,23 +1,26 @@
 outfile=paulstretch.exe
 
 rm -f $outfile
-wine /usr/local/i586-mingw32/bin/fluid.exe -c GUI.fl 
-wine /usr/local/i586-mingw32/bin/fluid.exe -c FreeEditUI.fl 
+
+mingw_dir="/usr/i586-mingw32msvc"
+
+wine "$mingw_dir/bin/fluid.exe" -c GUI.fl 
+wine "$mingw_dir/bin/fluid.exe" -c FreeEditUI.fl 
 
 clear 
 
 i586-mingw32msvc-g++ -O3 -DWINDOWS -DKISSFFT -I./contrib GUI.cxx FreeEditUI.cxx *.cpp Input/*.cpp Output/*.cpp contrib/*.c \
-`/usr/local/i586-mingw32/bin/fltk-config --cflags` \
-`/usr/local/i586-mingw32/bin/fltk-config --ldflags` \
-/usr/local/i586-mingw32/lib/libvorbisenc.a \
-/usr/local/i586-mingw32/lib/libvorbisfile.a \
-/usr/local/i586-mingw32/lib/libvorbis.a \
-/usr/local/i586-mingw32/lib/libogg.a \
-/usr/local/i586-mingw32/lib/libportaudio.a \
-/usr/local/i586-mingw32/lib/libaudiofile.a \
-/usr/local/i586-mingw32/lib/libmad.a \
-/usr/local/i586-mingw32/lib/libmxml.a \
-/usr/local/i586-mingw32/lib/libz.a \
+`"$mingw_dir/bin/fltk-config" --cflags` \
+`"$mingw_dir/bin/fltk-config" --ldflags` \
+"$mingw_dir/lib/libvorbisenc.a" \
+"$mingw_dir/lib/libvorbisfile.a" \
+"$mingw_dir/lib/libvorbis.a" \
+"$mingw_dir/lib/libogg.a" \
+"$mingw_dir/lib/libportaudio.a" \
+"$mingw_dir/lib/libaudiofile.a" \
+"$mingw_dir/lib/libmad.a" \
+"$mingw_dir/lib/libmxml.a" \
+"$mingw_dir/lib/libz.a" \
 -lm -lwinmm -o $outfile
 
 rm -f GUI.h GUI.cxx FreeEditUI.h FreeEditUI.cxx
