@@ -387,11 +387,10 @@ void Player::computesamples(){
 	bool result=true;
 	float in_pos_100=(REALTYPE) ai->info.currentsample/(REALTYPE)ai->info.nsamples*100.0;
 	int readsize=stretchl->get_nsamples(in_pos_100);
-	if (freeze_mode) readsize=0;
 
 
 	if (first_in_buf) readsize=stretchl->get_nsamples_for_fill();
-	if (readsize) result=(ai->read(readsize,inbuf_i)==(readsize));
+	if (readsize&&(!freeze_mode)) result=(ai->read(readsize,inbuf_i)==(readsize));
 	if (result){
 		float in_pos=(REALTYPE) ai->info.currentsample/(REALTYPE)ai->info.nsamples;
 		if (ai->eof) in_pos=0.0;
@@ -406,6 +405,7 @@ void Player::computesamples(){
 		stretchl->window_type=window_type;
 		stretchr->window_type=window_type;
 		REALTYPE s_onset=onset_detection_sensitivity;
+		if (freeze_mode) s_onset=0.0;
 		stretchl->set_onset_detection_sensitivity(s_onset);
 		stretchr->set_onset_detection_sensitivity(s_onset);
 		REALTYPE onset_l=stretchl->process(inbuf.l,readsize);
@@ -417,6 +417,7 @@ void Player::computesamples(){
 		//	stretchl->process_output(stretchl->out_buf,stretchl->out_bufsize);
 		//	stretchr->process_output(stretchr->out_buf,stretchr->out_bufsize);
 		int nskip=stretchl->get_skip_nsamples();
+		if (freeze_mode) nskip=0;
 		if (nskip>0) ai->skip(nskip);
 
 

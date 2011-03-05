@@ -75,6 +75,7 @@ History:
 	  - Ignored the commandline parameters starting with "-" (usefull for macosx)
     20110303(2.2-0)
           - gzip bugfix which prevents loading of the .psx files on Windows 
+          - bugfix on freeze function on onsets
 
 Enjoy! :)
 Paul
