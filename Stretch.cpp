@@ -273,7 +273,6 @@ REALTYPE Stretch::process(REALTYPE *smps,int nsmps){
 		};
 
 
-//#warning sa fac output spectrum ca la versiunea veche prin reanaliza a bufferului very_old_smps,old_smps,new_smps
 		//move the buffers	
 		if (nsmps!=0){//new data arrived: update the frequency components
 			do_next_inbuf_smps(smps);		
@@ -293,8 +292,10 @@ REALTYPE Stretch::process(REALTYPE *smps,int nsmps){
 		fft->applywindow(window_type);
 		fft->smp2freq();
 		for (int i=0;i<bufsize;i++) outfft->freq[i]=fft->freq[i];
-		
-	//	for (int i=0;i<bufsize;i++) outfft->freq[i]=infft->freq[i]*remained_samples+old_freq[i]*(1.0-remained_samples);
+	
+
+
+		//for (int i=0;i<bufsize;i++) outfft->freq[i]=infft->freq[i]*remained_samples+old_freq[i]*(1.0-remained_samples);
 
 
 		process_spectrum(outfft->freq);
