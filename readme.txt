@@ -73,9 +73,15 @@ History:
           - Shorten algorithm improvements 
           - Added an option to preserve the tonal part or noise part
 	  - Ignored the commandline parameters starting with "-" (usefull for macosx)
-    20110303(2.2-0)
+
+    20110305(2.2-0)
           - gzip bugfix which prevents loading of the .psx files on Windows 
           - bugfix on freeze function on onsets
+
+    20110305(2.2-1)
+	  - removed the noise on starting/seeking with the player
+          - bugfix on freeze function 
+
 
 Enjoy! :)
 Paul
