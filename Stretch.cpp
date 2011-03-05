@@ -142,6 +142,7 @@ void FFT::applywindow(FFTWindow type){
 
 
 Stretch::Stretch(REALTYPE rap_,int bufsize_,FFTWindow w,bool bypass_,REALTYPE samplerate_,int stereo_mode_){
+	freezing=false;
 	onset_detection_sensitivity=0.0;
 
 	samplerate=samplerate_;
@@ -259,13 +260,15 @@ REALTYPE Stretch::process(REALTYPE *smps,int nsmps){
 	};
 
 	if (smps!=NULL){
-		if ((nsmps!=0)&&(nsmps!=bufsize)&&(nsmps!=bufsize*2)){
+		if ((nsmps!=0)&&(nsmps!=bufsize)&&(nsmps!=get_max_bufsize())){
 			printf("Warning wrong nsmps on Stretch::process() %d,%d\n",nsmps,bufsize);
 			return 0.0;
 		};
 		if (nsmps!=0){//new data arrived: update the frequency components
 			do_analyse_inbuf(smps);		
-			if (nsmps==bufsize*2) do_analyse_inbuf(smps+bufsize);
+			if (nsmps==get_max_bufsize()) {
+				for (int k=bufsize;k<get_max_bufsize();k+=bufsize) do_analyse_inbuf(smps+k);
+			};
 			if (onset_detection_sensitivity>1e-3) onset=do_detect_onset();
 		};
 
@@ -274,8 +277,9 @@ REALTYPE Stretch::process(REALTYPE *smps,int nsmps){
 		//move the buffers	
 		if (nsmps!=0){//new data arrived: update the frequency components
 			do_next_inbuf_smps(smps);		
-			if (nsmps==bufsize*2) {
-				do_next_inbuf_smps(smps+bufsize);
+			if (nsmps==get_max_bufsize()) {
+				for (int k=bufsize;k<get_max_bufsize();k+=bufsize) do_next_inbuf_smps(smps+k);
+
 			};
 		};
 	
@@ -315,33 +319,35 @@ REALTYPE Stretch::process(REALTYPE *smps,int nsmps){
 
 	};
 
-	long double used_rap=rap*get_stretch_multiplier(c_pos_percents);	
+	if (!freezing){
+		long double used_rap=rap*get_stretch_multiplier(c_pos_percents);	
 
-	long double r=1.0/used_rap;
-	if (extra_onset_time_credit>0){
-		REALTYPE credit_get=0.5*r;//must be smaller than r
-		extra_onset_time_credit-=credit_get;
-		if (extra_onset_time_credit<0.0) extra_onset_time_credit=0.0;
-		r-=credit_get;
+		long double r=1.0/used_rap;
+		if (extra_onset_time_credit>0){
+			REALTYPE credit_get=0.5*r;//must be smaller than r
+			extra_onset_time_credit-=credit_get;
+			if (extra_onset_time_credit<0.0) extra_onset_time_credit=0.0;
+			r-=credit_get;
+		};
+
+		long double old_remained_samples_test=remained_samples;
+		remained_samples+=r;
+		int result=0;
+		if (remained_samples>=1.0){
+			skip_samples=(int)(floor(remained_samples-1.0)*bufsize);
+			remained_samples=remained_samples-floor(remained_samples);
+			require_new_buffer=true;
+		}else{
+			require_new_buffer=false;
+		};
 	};
-
-	long double old_remained_samples_test=remained_samples;
-	remained_samples+=r;
-	int result=0;
-	if (remained_samples>=1.0){
-		skip_samples=(int)(floor(remained_samples-1.0)*bufsize);
-		remained_samples=remained_samples-floor(remained_samples);
-		require_new_buffer=true;
-	}else{
-		require_new_buffer=false;
-	};
-
 //	long double rf_test=remained_samples-old_remained_samples_test;//this value should be almost like "rf" (for most of the time with the exception of changing the "ri" value) for extremely long stretches (otherwise the shown stretch value is not accurate)
 	//for stretch up to 10^18x "long double" must have at least 64 bits in the fraction part (true for gcc compiler on x86 and macosx)
 	return onset;	
 };
 
 void Stretch::here_is_onset(REALTYPE onset){
+	if (freezing) return;
 	if (onset>0.5){
 		require_new_buffer=true;
 		extra_onset_time_credit+=1.0-remained_samples;
@@ -352,15 +358,17 @@ void Stretch::here_is_onset(REALTYPE onset){
 
 int Stretch::get_nsamples(REALTYPE current_pos_percents){
 	if (bypass) return bufsize;
+	if (freezing) return 0;
 	c_pos_percents=current_pos_percents;
 	return require_new_buffer?bufsize:0;
 };
 
 int Stretch::get_nsamples_for_fill(){
-	return bufsize*2;
+	return get_max_bufsize();
 };
 
 int Stretch::get_skip_nsamples(){
+	if (freezing||bypass) return 0;
 	return skip_samples;
 };
 

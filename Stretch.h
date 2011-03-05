@@ -63,7 +63,7 @@ class Stretch{
 		virtual ~Stretch();
 
 		int get_max_bufsize(){
-			return bufsize*2;
+			return bufsize*3;
 		};
 		int get_bufsize(){
 			return bufsize;
@@ -74,6 +74,9 @@ class Stretch{
 		};
 
 		REALTYPE process(REALTYPE *smps,int nsmps);//returns the onset value
+		void set_freezing(bool new_freezing){
+			freezing=new_freezing;
+		};
 
 
 		REALTYPE *out_buf;//pot sa pun o variabila "max_out_bufsize" si asta sa fie marimea lui out_buf si pe out_bufsize sa il folosesc ca marime adaptiva
@@ -117,7 +120,7 @@ class Stretch{
 		REALTYPE c_pos_percents;
 		int skip_samples;
 		bool require_new_buffer;
-		bool bypass;
+		bool bypass,freezing;
 };
 
 

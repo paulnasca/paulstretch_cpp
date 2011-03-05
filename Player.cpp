@@ -390,7 +390,8 @@ void Player::computesamples(){
 
 
 	if (first_in_buf) readsize=stretchl->get_nsamples_for_fill();
-	if (readsize&&(!freeze_mode)) result=(ai->read(readsize,inbuf_i)==(readsize));
+		else if (freeze_mode) readsize=0;
+	if (readsize) result=(ai->read(readsize,inbuf_i)==(readsize));
 	if (result){
 		float in_pos=(REALTYPE) ai->info.currentsample/(REALTYPE)ai->info.nsamples;
 		if (ai->eof) in_pos=0.0;
@@ -401,26 +402,29 @@ void Player::computesamples(){
 			inbuf.r[i]=inbuf_i[i*2+1]*tmp;
 		};
 
-		first_in_buf=false;
 		stretchl->window_type=window_type;
 		stretchr->window_type=window_type;
 		REALTYPE s_onset=onset_detection_sensitivity;
-		if (freeze_mode) s_onset=0.0;
 		stretchl->set_onset_detection_sensitivity(s_onset);
 		stretchr->set_onset_detection_sensitivity(s_onset);
+		bool freezing=freeze_mode&&(!first_in_buf);
+		stretchl->set_freezing(freezing);
+		stretchr->set_freezing(freezing);
+
 		REALTYPE onset_l=stretchl->process(inbuf.l,readsize);
 		REALTYPE onset_r=stretchr->process(inbuf.r,readsize);
 		REALTYPE onset=(onset_l>onset_r)?onset_l:onset_r;
 		stretchl->here_is_onset(onset);
 		stretchr->here_is_onset(onset);
+		
 		binaural_beats->process(stretchl->out_buf,stretchr->out_buf,stretchl->get_bufsize(),in_pos_100);
 		//	stretchl->process_output(stretchl->out_buf,stretchl->out_bufsize);
 		//	stretchr->process_output(stretchr->out_buf,stretchr->out_bufsize);
 		int nskip=stretchl->get_skip_nsamples();
-		if (freeze_mode) nskip=0;
 		if (nskip>0) ai->skip(nskip);
 
 
+		first_in_buf=false;
 		bufmutex.lock();
 
 		for (int i=0;i<outbuf.size;i++){
