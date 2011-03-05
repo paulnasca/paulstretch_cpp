@@ -253,7 +253,8 @@ int XMLwrapper::loadXMLfile(const char *filename){
 
     char *xmldata=doloadfile(filename);    
     if (xmldata==NULL) return(-1);//the file could not be loaded or uncompressed
-    
+   
+   printf("%s\n",xmldata);	
     root=tree=mxmlLoadString(NULL,xmldata,MXML_OPAQUE_CALLBACK);
 
     delete []xmldata;
@@ -280,14 +281,13 @@ char *XMLwrapper::doloadfile(const char *filename){
     gzFile gzfile=gzopen(filename,"rb");
     if (gzfile!=NULL){//this is a gzip file 
 	// first check it's size
+	int bufsize=1024;
+	char* tmpbuf=new char[bufsize];
+	filesize=0;
 	while(!gzeof(gzfile)) {
-	    gzseek (gzfile,1024*1024,SEEK_CUR);
-	    if (gztell(gzfile)>10000000) {
-		gzclose(gzfile);
-		goto notgzip;//the file is too big
-	    };
+		filesize+=gzread(gzfile,tmpbuf,bufsize);
 	};
-	filesize=gztell(gzfile);
+	delete []tmpbuf;
 
 	//rewind the file and load the data
 	xmldata=new char[filesize+1];
