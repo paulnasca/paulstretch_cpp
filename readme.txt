@@ -82,7 +82,7 @@ History:
 	  - removed the noise on starting/seeking with the player
           - bugfix on freeze function 
 
-    2011????(?)
+    20110306(2.2-2)
 	  - buffer error on render
 
 Enjoy! :)
