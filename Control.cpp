@@ -387,7 +387,7 @@ string Control::Render(string inaudio,string outaudio,FILE_TYPE outtype,FILE_TYP
 	int inbufsize=process.bufsize;
 
 	if (inbufsize<32) inbufsize=32;
-	short int *inbuf_i=new short int[inbufsize*4];
+	short int *inbuf_i=new short int[inbufsize*8];
 	int outbufsize;
 	struct{
 		REALTYPE *l,*r;
