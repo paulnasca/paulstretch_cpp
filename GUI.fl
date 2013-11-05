@@ -45,8 +45,8 @@ decl {\#include "version.h"} {public
 Function {hex4n(char c)} {return_type int
 } {
   code {if (c>96) c-=32;
-if ((c>='0')||(c<='9')) return (c-'0');
-if ((c>='A')||(c<='F')) return (c-'A')+10;
+if ((c>='0')&&(c<='9')) return (c-'0');
+if ((c>='A')&&(c<='F')) return (c-'A')+10;
 
 return 0;} {}
 } 
