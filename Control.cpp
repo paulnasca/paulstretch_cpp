@@ -137,7 +137,7 @@ std::string Control::get_stretch_info(){
 			if (years==1) snprintf(stryears,size," 1 year");
 			else snprintf(stryears,size," %d years",years);
 		};
-		snprintf(tmp,size,"Stretch: %.7gx (%d milleniums%s)",process.stretch,milleniums,stryears);
+		snprintf(tmp,size,"Stretch: %.7gx (%d millenniums%s)",process.stretch,milleniums,stryears);
 		return tmp;
 	};
 	if (realduration>(365.25*86400.0)){//more than 1 year
