@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Name=paulstretch
+GenericName=Extreme Sound Time-Stretch
+GenericName[fr]=Étirement sonore extrême
+Comment=Suitable for extreme sound stretching of the audio (like 50x)
+Comment[fr]=Adapté pour un étirement extrême de l'audio (genre 50x)
+Exec=paulstretch
+Icon=paulstretch
+Terminal=false
+Type=Application
+Categories=AudioVideo;Audio;
