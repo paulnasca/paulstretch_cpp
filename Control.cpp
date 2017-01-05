@@ -62,6 +62,7 @@ bool Control::set_input_filename(string filename,FILE_TYPE intype){
 	if (intype==FILE_VORBIS) ai=new VorbisInputS;
 	if (intype==FILE_MP3) ai=new MP3InputS;
 	if (intype==FILE_WAV) ai=new AInputS;
+	if (intype==FILE_FLAC) ai=new AInputS;
 	if (!ai) return false;
 	wavinfo.filename=filename;
 	wavinfo.intype=intype;
