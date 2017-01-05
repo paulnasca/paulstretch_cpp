@@ -8,6 +8,8 @@ cmake_minimum_required(VERSION 2.8)
 if(LINUX)
 set_directory_properties(PROPERTIES COMPILE_DEFINITIONS -DHAVE_JACK)
 endif(LINUX)
+
+if(NOT USE_SYSTEM_PREREQS)
 #
 # paulstretch depends on numerous libraries that need to be built first.
 # My strategy is to install them all in a single 'sandbox' directory, and
@@ -21,6 +23,11 @@ SET(EXTERNAL_LIB_PREFIX "" CACHE PATH
 # fltk is installed in the sandbox but trying to use FindFLTK/UseFLTK
 # seems to cause problems. Adding just this variable makes Fluid work
 set(FLTK_FLUID_EXECUTABLE ${EXTERNAL_LIB_PREFIX}/bin/fluid)
+include_directories(${EXTERNAL_LIB_PREFIX}/include)
+link_directories(${EXTERNAL_LIB_PREFIX}/lib)
+else(NOT USE_SYSTEM_PREREQS)
+  find_package(FLTK REQUIRED)
+endif(NOT USE_SYSTEM_PREREQS)
 
 #
 # GUI files built in fluid.
@@ -61,8 +68,6 @@ set (Source_files
   )
 
 include_directories(${PaulStretch_SOURCE_DIR})
-include_directories(${EXTERNAL_LIB_PREFIX}/include)
-link_directories(${EXTERNAL_LIB_PREFIX}/lib)
 
 #
 # on Apple, need to link to Carbon/Cocoa etc. Don't know the 'CMake Way'

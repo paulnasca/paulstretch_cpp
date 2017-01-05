@@ -13,6 +13,8 @@
 
 cmake_minimum_required(VERSION 2.8)
 
+option(USE_SYSTEM_PREREQS "Only use system-installed prerequisite libraries" ON)
+
 # PaulStretch_SUPERBUILD determines whether to build the prerequisites
 # (ON) or build the application (OFF)
 option(PaulStretch_SUPERBUILD "Build PaulStretch and the project it depends on via SuperBuild.cmake" ON)
