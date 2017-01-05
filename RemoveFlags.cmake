@@ -1,0 +1,5 @@
+file(READ ${fixfile} code)
+string(REPLACE "-march=i486" "" code "${code}")
+string(REPLACE "-fforce-mem" "" code "${code}")
+string(REPLACE "-Werror" "" code "${code}")
+file(WRITE ${fixfile} "${code}")

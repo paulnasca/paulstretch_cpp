@@ -29,7 +29,7 @@ void sleep(int ms);
 #define ZERO(data,size) {char *data_=(char *) data;for (int i=0;i<size;i++) data_[i]=0;};
 
 enum FILE_TYPE{
-    FILE_WAV,FILE_VORBIS,FILE_MP3
+	FILE_WAV,FILE_VORBIS,FILE_MP3,FILE_FLAC
 };
 
 

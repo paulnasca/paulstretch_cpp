@@ -1,46 +1,46 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0110 
-header_name {.h} 
+version 1.0110
+header_name {.h}
 code_name {.cxx}
 decl {//Copyright (c) Nasca Octavian Paul. Released under GNU General Public License version 2} {public
-} 
+}
 
-decl {\#include <FL/Fl_File_Chooser.H>} {} 
+decl {\#include <FL/Fl_File_Chooser.H>} {}
 
 decl {\#include <FL/Fl_Box.H>} {public
-} 
+}
 
 decl {\#include <FL/Fl_Group.H>} {public
-} 
+}
 
 decl {\#include <FL/Fl_Box.H>} {public
-} 
+}
 
 decl {\#include <FL/fl_draw.H>} {public
-} 
+}
 
 decl {\#include <FL/Fl_Value_Input.H>} {public
-} 
+}
 
 decl {\#include <FL/fl_ask.H>} {public
-} 
+}
 
-decl {\#include<sys/stat.h>} {} 
+decl {\#include<sys/stat.h>} {}
 
-decl {\#include <stdio.h>} {} 
+decl {\#include <stdio.h>} {}
 
-decl {\#include <string>} {} 
+decl {\#include <string>} {}
 
-decl {\#include <math.h>} {} 
+decl {\#include <math.h>} {}
 
 decl {\#include "Control.h"} {public
-} 
+}
 
 decl {\#include "FreeEditUI.h"} {public
-} 
+}
 
 decl {\#include "version.h"} {public
-} 
+}
 
 Function {hex4n(char c)} {return_type int
 } {
@@ -49,7 +49,7 @@ if ((c>='0')&&(c<='9')) return (c-'0');
 if ((c>='A')&&(c<='F')) return (c-'A')+10;
 
 return 0;} {}
-} 
+}
 
 Function {unescape(std::string s)} {return_type {std::string}
 } {
@@ -73,7 +73,7 @@ while (sk<slen){
 
 //printf("%s\\n%s\\n",s.c_str(),result.c_str());
 return result;} {}
-} 
+}
 
 class DDBox {: {public Fl_Box}
 } {
@@ -99,7 +99,7 @@ return Fl_Box::handle(event);} {}
   }
   decl {bool new_drag_file;} {public
   }
-} 
+}
 
 class GUI {open
 } {
@@ -122,6 +122,7 @@ set_mode(STOP);} {}
 FILE_TYPE intype=FILE_WAV;
 if ((strcmp(ext,".ogg")==0)||(strcmp(ext,".OGG")==0)||(strcmp(ext,".Ogg")==0)) intype=FILE_VORBIS;
 if ((strcmp(ext,".mp3")==0)||(strcmp(ext,".MP3")==0)||(strcmp(ext,".Mp3")==0)) intype=FILE_MP3;
+if ((strcmp(ext,".flac")==0)||(strcmp(ext,".FLAC") == 0)) intype = FILE_FLAC;
 bool result=control.set_input_filename(filename,intype);
 if (result) {
 	infilename_output->copy_label(control.get_input_filename_and_info().c_str());
@@ -140,7 +141,7 @@ render_percent_slider->activate();
 cancel_render_button->activate();
 //char defaultfile[FL_PATH_MAX];
 //fl_filename_absolute(defaultfile,control.get_recommanded_output_filename().c_str());
-Fl_File_Chooser *fc=new Fl_File_Chooser(NULL,"Wave files (*.wav)\\tOgg Vorbis (*.ogg)",Fl_File_Chooser::CREATE,"Render to audio file...");
+Fl_File_Chooser *fc=new Fl_File_Chooser(NULL,"Wave files (*.wav)\\tOgg Vorbis (*.ogg)\\tFLAC (*.flac)",Fl_File_Chooser::CREATE,"Render to audio file...");
 
 fc->preview(0);
 fc->filter_value(0);
@@ -151,7 +152,7 @@ while (fc->visible()){
 };
 
 const char *newfile = fc->value();
-  if (newfile != NULL) {  	
+  if (newfile != NULL) {
   	if (file_exists(newfile)){
   		if (!fl_choice("The file exists. \\nOverwrite it?","No","Yes",NULL)) return;
   	};
@@ -200,10 +201,10 @@ rendering=false;} {}
         } {
           MenuItem {} {
             label {Open audio file...}
-            callback {char *newfile = fl_file_chooser("Open Audio(ogg,wav,mp3) File?", NULL, NULL);
+            callback {char *newfile = fl_file_chooser("Open Audio(ogg,wav,mp3,flac) File?", NULL, NULL);
   if (newfile != NULL) {
   	open_input_file(newfile);
-  	
+
   };
   selection_pos1->value(0.0);
   selection_pos2->value(100.0);
@@ -225,7 +226,7 @@ render();}
   if (newfile != NULL) {
 	set_mode(STOP);
 	control.stopplay();
- 
+
   	if (!control.load_parameters(newfile)){
   		fl_alert("Error: Could not load parameter file:\\n%s",newfile);
   	};
@@ -805,14 +806,14 @@ control.stopplay();}
 		play_button->labelcolor(FL_BLACK);
 		//mode_choice->activate();
 	break;
-	
+
 	case PLAY:
 		play_button->labelcolor(FL_RED);
 		//mode_choice->deactivate();
 		fftsize_slider->labelcolor(FL_BLACK);
 		freeze_button->activate();
 	break;
-	
+
 	case FREEZE:
 		if (control.is_freeze()) freeze_button->labelcolor(FL_GREEN);
 			else freeze_button->labelcolor(FL_BLACK);
@@ -836,7 +837,7 @@ resolution_box->copy_label(control.get_fftresolution_info().c_str());
 
 bool may_render=false;
 if (infilename_output->label()!=NULL){
-	if (strlen(infilename_output->label())!=0)  
+	if (strlen(infilename_output->label())!=0)
 	  may_render=true;
 };
 if (!rendering){//do not change the status of render button while rendering
@@ -938,7 +939,7 @@ Fl::add_timeout(1.0/3.0,tick,v);//3 fps} {}
   decl {bool playing_for_button;} {}
   decl {bool rendering;} {}
   decl {bool eof_for_button;} {}
-} 
+}
 
 Function {file_exists(const char *filename)} {return_type bool
 } {
@@ -947,7 +948,7 @@ int i = stat ( filename, &buf );
 // File exists
 if ( i == 0 ) return true;
   else  return false;} {}
-} 
+}
 
 Function {main(int argc, char *argv[])} {open return_type int
 } {
@@ -970,4 +971,4 @@ Fl::run();
 delete gui;
 
 return 0;} {}
-} 
+}

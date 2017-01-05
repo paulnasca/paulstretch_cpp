@@ -1,0 +1,26 @@
+PROJECT(mxml)
+# this is my CMake build recipe for paulstretch, an audio application
+# for extreme time stretching.
+# Source is here: https://sourceforge.net/project/showfiles.php?group_id=164941
+
+cmake_minimum_required(VERSION 2.8)
+
+include(CheckIncludeFiles)
+
+add_library(mxml STATIC
+ mxml-attr.c
+ mxml-entity.c
+ mxml-file.c
+ mxml-get.c
+ mxml-index.c
+ mxml-node.c
+ mxml-private.c
+ mxml-search.c
+ mxml-set.c
+ mxml-string.c
+ )
+
+install(TARGETS mxml 
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib)
+install(FILES mxml.h DESTINATION include)
